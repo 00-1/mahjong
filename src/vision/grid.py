@@ -49,10 +49,11 @@ def _cluster_1d(values: list[int], gap_threshold: int) -> list[list[int]]:
 def _cluster_centers(values: list[int], typical_size: int) -> list[tuple[int, int]]:
     """Cluster 1D values, return (cluster_id, cluster_center_value) for each input index.
 
-    Uses gap = typical_size * 0.6 — anything within ~60% of a tile width is
-    same row/column.
+    Uses gap = typical_size * 0.4 — must be smaller than the half-tile offset
+    (~0.566 * tile_h) so that levels with half-tile-staggered row layouts
+    (level 6+) get separate rows for the staggered positions.
     """
-    gap = int(typical_size * 0.6)
+    gap = int(typical_size * 0.4)
     clusters = _cluster_1d(values, gap)
     out = [(0, 0)] * len(values)
     for cid, idxs in enumerate(clusters):
