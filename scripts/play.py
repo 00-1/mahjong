@@ -122,6 +122,16 @@ def main(image_path: Path, level: int, top: int, tiles_dir: Path) -> None:
     # Annotate the screenshot with top move(s) highlighted
     bgr = cv2.imread(str(image_path))
 
+    # Mark dim/blocked tiles with their identification (low-opacity)
+    for d, (tid, sc) in zip(dim_dets, dim_ids):
+        if tid is None:
+            continue
+        color = (255, 100, 100)  # blue-ish for dim tiles
+        cv2.rectangle(bgr, (d.x, d.y), (d.x + d.w, d.y + d.h), color, 2)
+        confidence = "?" if sc > 0.6 else ""
+        cv2.putText(bgr, f"{lab(tid)[:8]}{confidence}", (d.x + 4, d.y + d.h - 8),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.4, color, 1, cv2.LINE_AA)
+
     def find_bbox(loc: str):
         if loc.startswith("("):
             r, c = [int(x) for x in loc.strip("()").split(",")]
