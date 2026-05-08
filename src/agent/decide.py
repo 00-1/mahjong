@@ -36,15 +36,25 @@ def decide(state_path: Path, image_size: tuple[int, int], label_fn=None) -> dict
     moves = suggest_moves(state, label_fn=label_fn)
     plans = plan_triplets(state)
 
-    # Game-over heuristic: tray full and no triplets in tray
-    from collections import Counter
-    tray_tiles = Counter(t.tile_id for t in state.tray if t.tile_id is not None)
-    has_tray_triplet = any(c >= 3 for c in tray_tiles.values())
-    if tray_filled >= 7 and not has_tray_triplet and not plans:
+    # Game-over heuristic: tray full means no taps allowed by the game,
+    # even if a triplet would be completable. Game is lost.
+    if tray_filled >= 7:
+        from collections import Counter
+        tray_tiles = Counter(t.tile_id for t in state.tray if t.tile_id is not None)
+        has_tray_triplet = any(c >= 3 for c in tray_tiles.values())
+        if has_tray_triplet:
+            # If tray contains a triplet directly, the game would auto-clear
+            # on the next animation frame — this is rare but possible.
+            return {
+                "should_stop": False,
+                "reason_code": "WAIT_FOR_AUTOCLEAR",
+                "reason": "tray contains a triplet — wait for the game to auto-clear, then re-screenshot",
+                "state": _state_summary(state, label_fn),
+            }
         return {
             "should_stop": True,
             "reason_code": "GAME_OVER",
-            "reason": "tray full with no completable triplet — game lost",
+            "reason": "tray full (7/7) with no triplet — game lost",
             "state": _state_summary(state, label_fn),
         }
 
