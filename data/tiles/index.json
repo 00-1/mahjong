@@ -155,6 +155,16 @@
         "tiles/samples/tile_013_03.jpg"
       ],
       "first_seen": "data/screenshots/level_05/run_01_loss.jpg"
+    },
+    {
+      "tile_id": "tile_014",
+      "phash": "fab5d36eac301b88f4127d4083732a63c4bb3d05b6c50fb942c9b5bc1bd35e21",
+      "label": "clover",
+      "samples": [
+        "tiles/samples/tile_014_00.jpg",
+        "tiles/samples/tile_014_01.jpg"
+      ],
+      "first_seen": "data/screenshots/level_06/run_01_loss.jpg"
     }
   ]
 }
