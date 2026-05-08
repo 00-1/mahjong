@@ -27,6 +27,8 @@ from PIL import Image
 HASH_SIZE = 16  # 16x16 = 256-bit phash
 DEFAULT_HAMMING_THRESHOLD = 60  # out of 256: same-art pairs observed up to 44; different-art >= 108
 
+MAX_SAMPLES_PER_TILE = 4  # keep a few example crops per tile for inspection; skip saving once full
+
 
 @dataclass
 class TileEntry:
@@ -93,9 +95,10 @@ class TileLibrary:
 
         if best is not None and best[1] <= threshold:
             entry = best[0]
-            sample_path = self._save_sample(bgr_crop, entry.tile_id, len(entry.samples))
-            entry.samples.append(sample_path)
-            self.save()
+            if len(entry.samples) < MAX_SAMPLES_PER_TILE:
+                sample_path = self._save_sample(bgr_crop, entry.tile_id, len(entry.samples))
+                entry.samples.append(sample_path)
+                self.save()
             return entry, best[1], False
 
         tile_id = self._next_id()
