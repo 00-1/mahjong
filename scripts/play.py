@@ -30,6 +30,7 @@ from collections import Counter
 
 from src.model.diff import load_state
 from src.solver.reactive import plan_triplets, suggest_moves
+from src.solver.unblock import find_blockers, suggest_unblocking
 from src.vision.all_tiles import (
     detect_all_tiles, identify_combined, identify_via_intra_screenshot,
 )
@@ -115,6 +116,58 @@ def main(image_path: Path, level: int, top: int, tiles_dir: Path) -> None:
         click.echo()
     else:
         click.echo("\n=== No completable triplets right now ===\n")
+
+    # Unblocking suggestions: for each tile type with bright + dim >= 3 but
+    # not enough brights, suggest which brights to tap to unblock the dim
+    bright_locations: list[str] = []
+    state_main_lookup = {(c.row, c.col): c for c in state.main_board}
+    queue_lookup = {q.queue_id: q for q in state.queues}
+    for d in bright_dets:
+        # Find which state cell this corresponds to (closest by bbox center)
+        match_loc = None
+        best_dist = float("inf")
+        for cell in state.main_board:
+            cx, cy = cell.bbox[0] + cell.bbox[2] // 2, cell.bbox[1] + cell.bbox[3] // 2
+            dist = (cx - d.cx) ** 2 + (cy - d.cy) ** 2
+            if dist < best_dist:
+                best_dist = dist
+                match_loc = f"({cell.row},{cell.col})"
+        for q in state.queues:
+            cx, cy = q.bbox[0] + q.bbox[2] // 2, q.bbox[1] + q.bbox[3] // 2
+            dist = (cx - d.cx) ** 2 + (cy - d.cy) ** 2
+            if dist < best_dist:
+                best_dist = dist
+                match_loc = f"queue:{q.queue_id}"
+        bright_locations.append(match_loc or f"unmapped@({d.cx},{d.cy})")
+
+    only_dim_ids = [tid for tid, _ in dim_ids]
+    template_path = ROOT / "data" / "levels" / f"{level:02d}" / "template.json"
+    if template_path.exists():
+        tpl = json.loads(template_path.read_text())
+        tile_w_template, tile_h_template = tpl.get("tile_w", 143), tpl.get("tile_h", 143)
+    else:
+        tile_w_template, tile_h_template = 143, 143
+    blockers_by_dim = find_blockers(
+        bright_dets, bright_locations, bright_ids,
+        dim_dets, only_dim_ids,
+        tile_w_template, tile_h_template,
+    )
+
+    almost_complete_targets = [
+        tid for tid in inventory
+        if (bright_inventory.get(tid, 0) + tray_inventory.get(tid, 0)) < 3
+        and inventory[tid] >= 3
+    ]
+    if almost_complete_targets:
+        unblock_plans = suggest_unblocking(
+            almost_complete_targets, dim_dets, only_dim_ids, blockers_by_dim,
+            label_fn=lab,
+        )
+        if unblock_plans:
+            click.echo("=== Unblocking suggestions ===")
+            for up in unblock_plans:
+                click.echo(f"  3x {lab(up.target_tile_id)} via: {' -> '.join(up.sequence)}  ({up.risk})")
+            click.echo()
     click.echo(f"Tray: {tray_filled}/7. {len(moves)} moves available.")
     click.echo(f"Visible tile inventory ({sum(inventory.values())} tiles, "
                f"{len(bright_dets)} bright + {len(dim_dets)} dim + {tray_filled} tray):")
