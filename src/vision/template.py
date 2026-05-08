@@ -29,20 +29,27 @@ from src.vision.detect import Detection
 from src.vision.grid import assign_grid
 
 
-# Half-tile offsets for depth >= 2 tiles. The exposed lower tile renders at
-# one of these positions relative to the original anchor. (0,0) means the
-# tile is at depth 1 (no offset).
-DEPTH_OFFSETS = [
-    (0, 0),      # depth 1
-    (76, 81),    # down-right
-    (-76, -81),  # up-left
-    (76, -81),   # up-right
-    (-76, 81),   # down-left
-    (76, 0),     # pure right
-    (-76, 0),    # pure left
-    (0, 81),     # pure down
-    (0, -81),    # pure up
+# Half-tile offset fractions for depth >= 2 tiles. Multiplied by (tile_w, tile_h)
+# at runtime to get pixel offsets — lets the same offsets apply across phone
+# resolutions. Empirical magnitudes from level 5 captures were 76px in cx
+# (tile_w=143 → fraction 0.531) and 81px in cy (tile_h=143 → fraction 0.566).
+# (0, 0) means depth 1 (no offset).
+DEPTH_OFFSET_FRACS = [
+    (0.0, 0.0),       # depth 1
+    (0.531, 0.566),   # down-right
+    (-0.531, -0.566), # up-left
+    (0.531, -0.566),  # up-right
+    (-0.531, 0.566),  # down-left
+    (0.531, 0.0),     # pure right
+    (-0.531, 0.0),    # pure left
+    (0.0, 0.566),     # pure down
+    (0.0, -0.566),    # pure up
 ]
+
+
+def depth_offsets(tile_w: int, tile_h: int) -> list[tuple[int, int]]:
+    """Pixel-space depth offsets for a given tile size."""
+    return [(int(fx * tile_w), int(fy * tile_h)) for fx, fy in DEPTH_OFFSET_FRACS]
 
 
 @dataclass
@@ -53,6 +60,17 @@ class Anchor:
     queue_id: str | None  # "<side>_<tier>" for queue, None otherwise
     cx: int
     cy: int
+
+
+@dataclass
+class Template:
+    """A level template plus the image dimensions it was captured at, so we
+    can rescale to other phone resolutions on load."""
+    image_w: int
+    image_h: int
+    tile_w: int  # observed median tile width in template image
+    tile_h: int  # observed median tile height
+    anchors: list[Anchor]
 
 
 @dataclass
@@ -76,7 +94,7 @@ def _queue_id_for(cx: int, cy: int, image_w: int, queue_cy_values: list[int]) ->
     return f"{side}_{tier}"
 
 
-def build_template(detections: list[Detection], image_w: int) -> list[Anchor]:
+def build_template(detections: list[Detection], image_w: int, image_h: int) -> Template:
     """Build a level template from a clean, full initial state."""
     grid = assign_grid(detections)
     main_rows = sorted({a.row for a in grid if a.zone == "main_board"})
@@ -104,41 +122,77 @@ def build_template(detections: list[Detection], image_w: int) -> list[Anchor]:
             ))
 
     # Add 7 tray slot anchors evenly spaced along the bottom row.
-    # Tray cy is observed empirically at ~2382 in 1220x2712 images; slots at
-    # cx in [155, 307, 458, 610, 761, 912, 1064].
-    tray_cy = 2382
-    tray_cxs = [155, 307, 458, 610, 761, 912, 1064]
+    # Tray cy is observed empirically at ~0.88 * image_h; slots evenly spaced
+    # across the full image width.
+    tray_cy = int(image_h * 0.879)
+    tray_cxs = [int(image_w * frac) for frac in [0.127, 0.252, 0.376, 0.500, 0.624, 0.748, 0.873]]
     for i, cx in enumerate(tray_cxs):
         anchors.append(Anchor(
             zone="tray", row=-1, col=i, queue_id=None,
             cx=cx, cy=tray_cy,
         ))
-    return anchors
+
+    tile_w = int(np.median([d.w for d in detections])) if detections else 143
+    tile_h = int(np.median([d.h for d in detections])) if detections else 143
+    return Template(image_w=image_w, image_h=image_h, tile_w=tile_w, tile_h=tile_h, anchors=anchors)
 
 
-def save_template(anchors: list[Anchor], path: Path) -> None:
+def save_template(template: Template, path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(
-        {"anchors": [asdict(a) for a in anchors]}, indent=2,
-    ))
+    path.write_text(json.dumps({
+        "image_w": template.image_w,
+        "image_h": template.image_h,
+        "tile_w": template.tile_w,
+        "tile_h": template.tile_h,
+        "anchors": [asdict(a) for a in template.anchors],
+    }, indent=2))
 
 
-def load_template(path: Path) -> list[Anchor] | None:
+def load_template(path: Path) -> Template | None:
     if not path.exists():
         return None
-    return [Anchor(**a) for a in json.loads(path.read_text())["anchors"]]
+    data = json.loads(path.read_text())
+    return Template(
+        image_w=data["image_w"],
+        image_h=data["image_h"],
+        tile_w=data["tile_w"],
+        tile_h=data["tile_h"],
+        anchors=[Anchor(**a) for a in data["anchors"]],
+    )
+
+
+def scale_template(template: Template, target_w: int, target_h: int) -> Template:
+    """Rescale a template to a target image resolution. Useful when the template
+    was captured on a different phone than the current screenshot."""
+    if (template.image_w, template.image_h) == (target_w, target_h):
+        return template
+    sx = target_w / template.image_w
+    sy = target_h / template.image_h
+    scaled_anchors = [
+        Anchor(
+            zone=a.zone, row=a.row, col=a.col, queue_id=a.queue_id,
+            cx=int(a.cx * sx), cy=int(a.cy * sy),
+        )
+        for a in template.anchors
+    ]
+    return Template(
+        image_w=target_w, image_h=target_h,
+        tile_w=int(template.tile_w * sx),
+        tile_h=int(template.tile_h * sy),
+        anchors=scaled_anchors,
+    )
 
 
 def snap_detections(
     detections: list[Detection],
-    anchors: list[Anchor],
+    template: Template,
     image_w: int,
     *,
     main_max_distance: float = 60.0,
     tray_max_distance: float = 60.0,
     queue_cy_tolerance: float = 50.0,
 ) -> tuple[list[SnapResult], list[int]]:
-    """Snap detections to anchors with zone-aware logic.
+    """Snap detections to template anchors with zone-aware logic.
 
     main_board: try all DEPTH_OFFSETS; nearest match wins (greedy).
     tray: snap to nearest of 7 slot anchors by cx.
@@ -146,17 +200,16 @@ def snap_detections(
       appear anywhere along their strip's cx range, so we don't require cx
       proximity to the canonical anchor.
     """
-    main_anchors = [a for a in anchors if a.zone == "main_board"]
-    tray_anchors = [a for a in anchors if a.zone == "tray"]
+    anchors = template.anchors
     queue_anchors = [a for a in anchors if a.zone == "queue"]
     queue_cy_values = sorted({a.cy for a in queue_anchors})
+    offsets = depth_offsets(template.tile_w, template.tile_h)
 
     candidates: list[tuple[float, int, int, tuple[int, int]]] = []  # (dist, det_idx, anchor_idx, offset)
     for di, d in enumerate(detections):
-        # Main board candidates with offsets
         for ai, a in enumerate(anchors):
             if a.zone == "main_board":
-                for ox, oy in DEPTH_OFFSETS:
+                for ox, oy in offsets:
                     target_x = a.cx + ox
                     target_y = a.cy + oy
                     dist = ((d.cx - target_x) ** 2 + (d.cy - target_y) ** 2) ** 0.5
@@ -167,9 +220,6 @@ def snap_detections(
                 if dist <= tray_max_distance:
                     candidates.append((dist, di, ai, (0, 0)))
 
-        # Queue: match by (side, tier) for any detection whose cy is near a queue row.
-        # We assign the detection to a *virtual* queue anchor for the matching
-        # (side, tier) — distance is purely the cy mismatch.
         if queue_cy_values:
             best_queue_cy = min(queue_cy_values, key=lambda qcy: abs(d.cy - qcy))
             cy_dist = abs(d.cy - best_queue_cy)
@@ -180,23 +230,16 @@ def snap_detections(
                         candidates.append((float(cy_dist), di, ai, (0, 0)))
                         break
 
-    # Globally-optimal assignment via Hungarian. For each (detection, anchor)
-    # pair we keep only the BEST candidate (smallest distance across offsets);
-    # unreachable pairs get a large penalty so they're avoided.
     UNREACHABLE = 1e6
     n_dets = len(detections)
     n_anchors = len(anchors)
     cost = np.full((n_dets, n_anchors), UNREACHABLE, dtype=float)
-    best_offset = {}  # (det_idx, anchor_idx) -> (ox, oy)
+    best_offset = {}
     for dist, di, ai, off in candidates:
         if dist < cost[di, ai]:
             cost[di, ai] = dist
             best_offset[(di, ai)] = off
 
-    # Pad with virtual "no-match" anchors so assignment can always complete.
-    # Each detection can fall back to a virtual anchor with cost slightly
-    # smaller than UNREACHABLE — that lets unmatched detections drop out
-    # without forcing a bad real match.
     NO_MATCH_COST = UNREACHABLE - 1
     n_virtual = max(0, n_dets)
     if n_anchors < n_dets + n_virtual:

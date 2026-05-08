@@ -1,4 +1,8 @@
 {
+  "image_w": 1220,
+  "image_h": 2712,
+  "tile_w": 143,
+  "tile_h": 143,
   "anchors": [
     {
       "zone": "main_board",
@@ -165,8 +169,8 @@
       "row": -1,
       "col": 0,
       "queue_id": null,
-      "cx": 155,
-      "cy": 2382
+      "cx": 154,
+      "cy": 2383
     },
     {
       "zone": "tray",
@@ -174,7 +178,7 @@
       "col": 1,
       "queue_id": null,
       "cx": 307,
-      "cy": 2382
+      "cy": 2383
     },
     {
       "zone": "tray",
@@ -182,7 +186,7 @@
       "col": 2,
       "queue_id": null,
       "cx": 458,
-      "cy": 2382
+      "cy": 2383
     },
     {
       "zone": "tray",
@@ -190,7 +194,7 @@
       "col": 3,
       "queue_id": null,
       "cx": 610,
-      "cy": 2382
+      "cy": 2383
     },
     {
       "zone": "tray",
@@ -198,7 +202,7 @@
       "col": 4,
       "queue_id": null,
       "cx": 761,
-      "cy": 2382
+      "cy": 2383
     },
     {
       "zone": "tray",
@@ -206,15 +210,15 @@
       "col": 5,
       "queue_id": null,
       "cx": 912,
-      "cy": 2382
+      "cy": 2383
     },
     {
       "zone": "tray",
       "row": -1,
       "col": 6,
       "queue_id": null,
-      "cx": 1064,
-      "cy": 2382
+      "cx": 1065,
+      "cy": 2383
     }
   ]
 }

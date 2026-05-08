@@ -28,7 +28,7 @@ sys.path.insert(0, str(ROOT))
 from src.model.state import BoardState, MainCell, QueueCell, TraySlot
 from src.vision.detect import DetectConfig, detect_tile_faces
 from src.vision.library import TileLibrary, crop_face_center
-from src.vision.template import build_template, load_template, save_template, snap_detections
+from src.vision.template import build_template, load_template, save_template, scale_template, snap_detections
 
 
 # Offset magnitudes greater than this px imply the detection is from a depth>=2
@@ -82,9 +82,12 @@ def main(image_path: Path, level: int, out_dir: Path | None, tiles_dir: Path, re
     template_path = ROOT / "data" / "levels" / f"{level:02d}" / "template.json"
     template = None if rebuild_template else load_template(template_path)
     if template is None:
-        template = build_template(detections, w)
+        template = build_template(detections, w, h)
         save_template(template, template_path)
-        click.echo(f"built template from this image ({len(template)} anchors)")
+        click.echo(f"built template from this image ({len(template.anchors)} anchors)")
+    elif (template.image_w, template.image_h) != (w, h):
+        click.echo(f"scaling template from {template.image_w}x{template.image_h} to {w}x{h}")
+        template = scale_template(template, w, h)
 
     snap_results, unmatched_idxs = snap_detections(detections, template, w)
     unmatched = [detections[i] for i in unmatched_idxs]
