@@ -208,6 +208,76 @@ def identify_by_template_match(
     return best, scores[best], scores
 
 
+def _dominant_hue(bgr: np.ndarray, s_thresh: int = 80) -> float | None:
+    """Median hue of strongly-saturated pixels (the colorful art).
+    Returns None if no saturated pixels (e.g., mostly cream)."""
+    hsv = cv2.cvtColor(bgr, cv2.COLOR_BGR2HSV)
+    mask = hsv[..., 1] > s_thresh
+    if not mask.any():
+        return None
+    return float(np.median(hsv[..., 0][mask]))
+
+
+def identify_half_tile(
+    bgr_crop: np.ndarray,
+    library_samples: dict[str, np.ndarray],
+) -> tuple[str | None, float, dict[str, float]]:
+    """Identify a partial tile by:
+    1. Filtering library candidates to those within hue tolerance of the crop
+    2. Matching those candidates via NCC on the visible half/full
+    """
+    h_in, w_in = bgr_crop.shape[:2]
+    is_vertical_strip = h_in > 1.4 * w_in
+    is_horizontal_strip = w_in > 1.4 * h_in
+
+    # Hue-based candidate filtering. Tiles within ±15° of crop's dominant hue.
+    # Hue is circular (0..180) — handle wraparound.
+    crop_hue = _dominant_hue(bgr_crop)
+    candidates = []
+    for tid, sample in library_samples.items():
+        sh = _dominant_hue(sample)
+        if crop_hue is None or sh is None:
+            candidates.append((tid, sample))
+            continue
+        diff = abs(crop_hue - sh)
+        diff = min(diff, 180 - diff)  # circular
+        if diff <= 18:
+            candidates.append((tid, sample))
+    if not candidates:
+        candidates = list(library_samples.items())
+
+    crop_gray = cv2.cvtColor(bgr_crop, cv2.COLOR_BGR2GRAY)
+    crop_eq = cv2.equalizeHist(crop_gray)
+
+    scores: dict[str, float] = {}
+    for tile_id, sample in candidates:
+        sh, sw = sample.shape[:2]
+        cands = []
+        if is_vertical_strip:
+            cands.append(sample[:, :sw // 2])
+            cands.append(sample[:, sw // 2:])
+        elif is_horizontal_strip:
+            cands.append(sample[:sh // 2, :])
+            cands.append(sample[sh // 2:, :])
+        else:
+            cands.append(sample)
+
+        best_ncc = -1.0
+        for c in cands:
+            cr = cv2.resize(c, (w_in, h_in))
+            cg = cv2.equalizeHist(cv2.cvtColor(cr, cv2.COLOR_BGR2GRAY))
+            ncc = float(cv2.matchTemplate(crop_eq, cg, cv2.TM_CCOEFF_NORMED)[0, 0])
+            if ncc > best_ncc:
+                best_ncc = ncc
+        scores[tile_id] = 1.0 - best_ncc
+    # Tiles not in candidates get a high penalty score so they're sorted last
+    for tid in library_samples:
+        if tid not in scores:
+            scores[tid] = 2.0
+    best = min(scores, key=scores.get)
+    return best, scores[best], scores
+
+
 def identify_combined(
     bgr_crop: np.ndarray,
     library_samples: dict[str, np.ndarray],
@@ -216,7 +286,17 @@ def identify_combined(
     """Identify a tile using pHash + histogram, with brightness equalization
     for dim crops to make their pHash comparable to bright library samples.
     """
-    # Bright pHash first — works great for bright tiles
+    # If crop is a partial-tile shape (much taller than wide or vice versa),
+    # use half-tile matching specifically.
+    h_in, w_in = bgr_crop.shape[:2]
+    if h_in > 1.4 * w_in or w_in > 1.4 * h_in:
+        half_id, half_score, half_scores = identify_half_tile(bgr_crop, library_samples)
+        sorted_half = sorted(half_scores.values())
+        runner_up = sorted_half[1] if len(sorted_half) > 1 else float("inf")
+        margin = runner_up - half_score
+        return half_id, half_score, half_scores
+
+    # Bright pHash first — works great for full bright tiles
     phash_id, phash_score, phash_scores = identify_by_phash(
         bgr_crop, library_samples, normalize=False,
     )
