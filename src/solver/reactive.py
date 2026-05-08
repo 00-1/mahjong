@@ -78,11 +78,16 @@ def suggest_moves(state: BoardState, label_fn=None) -> list[Move]:
 
     triplet_tile_ids = {c.tile_id for c in triplets}
 
-    # 1. Moves that complete visible triplets (best)
+    # 1. Moves that complete visible triplets (best). Emit one Move per
+    # tap location, but the reason tells the user the FULL triplet sequence.
     for c in triplets:
         non_tray_faces = [f for f in c.faces if not f.location.startswith("tray:")]
+        tray_faces = [f for f in c.faces if f.location.startswith("tray:")]
         if not non_tray_faces:
             continue
+        sequence_str = " + ".join(f.location for f in non_tray_faces)
+        if tray_faces:
+            sequence_str += f" (with {len(tray_faces)} already in tray)"
         for f in non_tray_faces:
             score = 10.0
             score -= c.taps_needed - 1  # fewer taps = better
@@ -92,7 +97,7 @@ def suggest_moves(state: BoardState, label_fn=None) -> list[Move]:
                 location=f.location,
                 tile_id=f.tile_id,
                 score=score,
-                reason=f"completes 3x {label_fn(f.tile_id)} triplet ({c.taps_needed} taps total)",
+                reason=f"3x {label_fn(f.tile_id)}: tap {sequence_str}",
             ))
 
     # 2. Moves that don't help but don't hurt much (just fill tray)

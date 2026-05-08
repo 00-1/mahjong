@@ -1,0 +1,134 @@
+"""Main solver UI: take a screenshot, recommend the best next tap.
+
+Usage:
+    python scripts/play.py screenshot.jpg --level 8
+
+Pipeline:
+1. Extract bright top tiles + identify each
+2. Identify dim/partial tiles via intra-screenshot reference matching
+3. Suggest ranked moves with risk scoring
+4. Save an annotated image with the top move highlighted
+
+Outputs:
+    data/extractions/level_NN/<stem>/play_overlay.jpg  — annotated screenshot
+    stdout                                              — top moves with reasons
+"""
+
+from __future__ import annotations
+
+import json
+import sys
+from pathlib import Path
+
+import click
+import cv2
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+
+from src.model.diff import load_state
+from src.solver.reactive import suggest_moves
+
+
+@click.command()
+@click.argument("image_path", type=click.Path(exists=True, dir_okay=False, path_type=Path))
+@click.option("--level", type=int, required=True)
+@click.option("--top", type=int, default=5, help="How many top moves to show")
+@click.option("--tiles-dir", type=click.Path(path_type=Path), default=ROOT / "data" / "tiles")
+def main(image_path: Path, level: int, top: int, tiles_dir: Path) -> None:
+    label_index = {}
+    idx_path = tiles_dir / "index.json"
+    if idx_path.exists():
+        for e in json.loads(idx_path.read_text()).get("entries", []):
+            label_index[e["tile_id"]] = e.get("label") or e["tile_id"]
+
+    def lab(tid):
+        return label_index.get(tid, tid) if tid else "?"
+
+    # Run the standard extract pipeline first to get a structured state
+    import subprocess
+    result = subprocess.run(
+        [sys.executable, str(ROOT / "scripts" / "extract_board.py"),
+         str(image_path), "--level", str(level)],
+        capture_output=True, text=True,
+    )
+    if result.returncode != 0:
+        click.echo(result.stderr, err=True)
+        raise click.ClickException("extraction failed")
+    out_dir = ROOT / "data" / "extractions" / f"level_{level:02d}" / image_path.stem
+    state_path = out_dir / "state.json"
+    state = load_state(state_path)
+
+    # Get move recommendations
+    moves = suggest_moves(state, label_fn=lab)
+
+    tray_filled = sum(1 for t in state.tray if t.tile_id is not None)
+    click.echo(f"Tray: {tray_filled}/7. {len(moves)} moves available.")
+    click.echo()
+    click.echo(f"{'rank':<5} {'score':>7}  {'location':<20} {'tile':<18} reason")
+    for i, m in enumerate(moves[:top]):
+        click.echo(f"{i+1:<5} {m.score:>7.2f}  {m.location:<20} {lab(m.tile_id):<18} {m.reason}")
+
+    # Annotate the screenshot with top move(s) highlighted
+    bgr = cv2.imread(str(image_path))
+
+    def find_bbox(loc: str):
+        if loc.startswith("("):
+            r, c = [int(x) for x in loc.strip("()").split(",")]
+            for cell in state.main_board:
+                if (cell.row, cell.col) == (r, c):
+                    return cell.bbox
+        elif loc.startswith("queue:"):
+            qid = loc.split(":", 1)[1]
+            for q in state.queues:
+                if q.queue_id == qid:
+                    return q.bbox
+        return None
+
+    # If the top recommendation is a triplet, highlight ALL members with the
+    # same color and a sequence label. Otherwise highlight the top N individually.
+    drawn = set()
+    if moves:
+        top_move = moves[0]
+        # All moves with same tile_id and same triplet-completion score are
+        # part of the same triplet — draw them together
+        triplet_locs = [
+            m.location for m in moves
+            if m.tile_id == top_move.tile_id
+            and abs(m.score - top_move.score) < 0.1
+            and m.score >= 7
+        ]
+        if len(triplet_locs) >= 1 and top_move.score >= 7:
+            for j, loc in enumerate(triplet_locs):
+                bbox = find_bbox(loc)
+                if bbox is None:
+                    continue
+                x, y, w, h = bbox
+                cv2.rectangle(bgr, (x - 4, y - 4), (x + w + 4, y + h + 4), (0, 255, 0), 8)
+                cv2.putText(bgr, f"TAP {j+1}", (x + 8, y + h - 8),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2, cv2.LINE_AA)
+                drawn.add(loc)
+            cv2.putText(bgr, f"3x {lab(top_move.tile_id)} triplet",
+                        (40, 60),
+                        cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0, 255, 0), 3, cv2.LINE_AA)
+
+    # Draw runners-up with dim cyan
+    for i, m in enumerate(moves[:top]):
+        if m.location in drawn:
+            continue
+        bbox = find_bbox(m.location)
+        if bbox is None:
+            continue
+        x, y, w, h = bbox
+        color = (180, 180, 0)
+        cv2.rectangle(bgr, (x - 2, y - 2), (x + w + 2, y + h + 2), color, 3)
+        cv2.putText(bgr, f"#{i+1} {lab(m.tile_id)}", (x, y - 12),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2, cv2.LINE_AA)
+
+    overlay_path = out_dir / "play_overlay.jpg"
+    cv2.imwrite(str(overlay_path), bgr, [cv2.IMWRITE_JPEG_QUALITY, 88])
+    click.echo(f"\nannotated -> {overlay_path}")
+
+
+if __name__ == "__main__":
+    main()
