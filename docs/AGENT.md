@@ -7,6 +7,21 @@ The agent itself doesn't need to import any Python modules from this repo
 — it shells out to `agent.py` and parses JSON from stdout. That keeps the
 contract stable.
 
+## Game navigation (before the play loop)
+
+The Arcane Puzzle is buried inside an Events menu. Before calling
+`agent.py start-run`, the agent needs to navigate:
+
+```
+home -> Event Center -> Festival Event tab -> Arcane Puzzle ->
+  scroll to current level -> tap Continue (or Restart for fresh run)
+```
+
+Reference screenshots with annotations are in `docs/navigation/`. See
+`docs/navigation/README.md` for details. The rest of this document
+assumes the agent has reached the gameplay screen (Level N visible at
+top, tiles laid out).
+
 ## Loop overview
 
 ```
