@@ -167,6 +167,15 @@
         "tiles/samples/tile_014_03.jpg"
       ],
       "first_seen": "data/screenshots/level_06/run_01_loss.jpg"
+    },
+    {
+      "tile_id": "tile_015",
+      "phash": "bcb30fd4b6f8a73bb24acc37c2ab58e8c32b60dcca5dc37127601972c25a70c3",
+      "label": "red_flower",
+      "samples": [
+        "tiles/samples/tile_015_00.jpg"
+      ],
+      "first_seen": "data/screenshots/level_08/run_01_mid.jpg"
     }
   ]
 }
