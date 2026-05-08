@@ -11,11 +11,10 @@ the level list).
 
 ### 1. `01_home.jpg` — game home screen
 
-City view, with various UI elements. The agent needs to find the way to
-the **Event Center**. (The reference screenshot doesn't have a red circle
-on this step — the user knows where it is. Best guess: look for an
-"Events" button, or a calendar/festival icon, often on the right edge or
-in a side panel.)
+City view, with various UI elements. **Tap the small fireworks / event
+banner in the top-right** (red circle in the reference screenshot). It's
+the small panel with a countdown timer next to it. That opens the Event
+Center.
 
 ### 2. `02.jpg` — Event Center / Daily Event tab
 
@@ -58,8 +57,3 @@ the play loop.
   a "leave level" prompt. After end-run, the agent navigates back to step
   4 to choose the next level.
 
-## Gap to fill
-
-The home → Event Center step (step 1 → step 2) isn't pinpointed in the
-reference screenshots. If you can send a screenshot with a red circle on
-the right tap target, I'll add it here.
