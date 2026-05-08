@@ -35,13 +35,20 @@ class QueueCell:
 
 
 @dataclass
+class TraySlot:
+    slot: int  # 0..6
+    bbox: tuple[int, int, int, int]
+    tile_id: str | None = None
+
+
+@dataclass
 class BoardState:
     level: int | None
     image: str  # relative path
     image_size: tuple[int, int]  # w, h
     main_board: list[MainCell] = field(default_factory=list)
     queues: list[QueueCell] = field(default_factory=list)
-    tray: list[str | None] = field(default_factory=list)  # tile_ids; None = empty slot
+    tray: list[TraySlot] = field(default_factory=list)
     boost_counts: dict[str, int] = field(default_factory=dict)
 
     def to_json(self) -> str:

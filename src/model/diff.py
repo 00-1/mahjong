@@ -20,7 +20,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path
 
-from src.model.state import BoardState, MainCell, QueueCell
+from src.model.state import BoardState, MainCell, QueueCell, TraySlot
 
 
 @dataclass
@@ -32,13 +32,19 @@ class TapEvent:
 
 
 def _state_from_dict(d: dict) -> BoardState:
+    tray_data = d.get("tray", [])
+    # Backwards compat: old states had tray as list[str]; new has list[TraySlot]
+    if tray_data and isinstance(tray_data[0], dict):
+        tray = [TraySlot(**t) for t in tray_data]
+    else:
+        tray = []
     return BoardState(
         level=d["level"],
         image=d["image"],
         image_size=tuple(d["image_size"]),
         main_board=[MainCell(**c) for c in d["main_board"]],
         queues=[QueueCell(**q) for q in d["queues"]],
-        tray=d.get("tray", []),
+        tray=tray,
         boost_counts=d.get("boost_counts", {}),
     )
 

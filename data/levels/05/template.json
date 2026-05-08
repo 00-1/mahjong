@@ -159,6 +159,62 @@
       "queue_id": "right_lower",
       "cx": 906,
       "cy": 1525
+    },
+    {
+      "zone": "tray",
+      "row": -1,
+      "col": 0,
+      "queue_id": null,
+      "cx": 155,
+      "cy": 2382
+    },
+    {
+      "zone": "tray",
+      "row": -1,
+      "col": 1,
+      "queue_id": null,
+      "cx": 307,
+      "cy": 2382
+    },
+    {
+      "zone": "tray",
+      "row": -1,
+      "col": 2,
+      "queue_id": null,
+      "cx": 458,
+      "cy": 2382
+    },
+    {
+      "zone": "tray",
+      "row": -1,
+      "col": 3,
+      "queue_id": null,
+      "cx": 610,
+      "cy": 2382
+    },
+    {
+      "zone": "tray",
+      "row": -1,
+      "col": 4,
+      "queue_id": null,
+      "cx": 761,
+      "cy": 2382
+    },
+    {
+      "zone": "tray",
+      "row": -1,
+      "col": 5,
+      "queue_id": null,
+      "cx": 912,
+      "cy": 2382
+    },
+    {
+      "zone": "tray",
+      "row": -1,
+      "col": 6,
+      "queue_id": null,
+      "cx": 1064,
+      "cy": 2382
     }
   ]
 }
