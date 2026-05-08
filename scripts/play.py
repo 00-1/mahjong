@@ -108,11 +108,26 @@ def main(image_path: Path, level: int, top: int, tiles_dir: Path) -> None:
     if plans:
         click.echo(f"\n=== Triplet plan ({len(plans)} ready triplets) ===")
         running_tray = tray_filled
+        peak_tray = running_tray
+        feasible_plans = []
         for plan in plans:
-            running_tray += plan.taps_needed - 3  # net change after triplet clears
+            # Tray during execution peaks at running_tray + taps_needed before
+            # the triplet auto-clears (which removes 3, including the 3 newly
+            # placed tiles). Net change after a triplet clear: taps_needed - 3.
+            during = running_tray + plan.taps_needed
+            if during > 7:
+                # Can't actually execute — would overflow tray mid-sequence
+                feasibility = "(would overflow tray)"
+            else:
+                running_tray = during - 3
+                peak_tray = max(peak_tray, during)
+                feasibility = ""
+                feasible_plans.append(plan)
             tap_str = " -> ".join(plan.tap_locations)
             tray_note = f" [+{plan.tray_already} from tray]" if plan.tray_already else ""
-            click.echo(f"  3x {lab(plan.tile_id)}: {tap_str}{tray_note}")
+            click.echo(f"  3x {lab(plan.tile_id)}: {tap_str}{tray_note} {feasibility}")
+        if len(feasible_plans) >= 2:
+            click.echo(f"  -- after sequence: tray will be at {running_tray}/7 (peaked at {peak_tray}/7)")
         click.echo()
     else:
         click.echo("\n=== No completable triplets right now ===\n")
