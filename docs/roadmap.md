@@ -26,28 +26,43 @@ level 8+ before fully discarding the structure-fixed approach.
 
 ## Confirmed mechanics
 
+- **There is one mechanic**: tap top tile, next tile in the same stack is
+  exposed. The "queue" cells (4 wood-grain strips at the bottom) work
+  exactly like main-board cells — they're just rendered as edge-on
+  horizontal strips instead of diagonal stacks. Both hide their lower
+  tiles. Naming is historical; should rename to `strip_cell` eventually.
 - Main board tiles render with one of **9 candidate offset positions** when
   the top tile is removed and a lower tile is exposed: origin (depth 1) plus
   4 diagonal half-tile shifts and 4 cardinal half-tile shifts. The offset
   direction reveals the stack's "lean".
-- Queue heads can appear **anywhere along their wood-grain strip's cx
-  range**, not at a fixed cx. The cx position shifts as tiles are consumed.
+- Some lower tiles are **fully obscured** (zero visible offset from the top
+  tile). After tapping, they appear at the original anchor position. We
+  cannot predict their identity from the initial state — they're hidden
+  until revealed. This is a common loss vector: you tap expecting an empty
+  slot, get a tile you didn't want, fill the tray.
+- Strip cells ("queues") **contain multiple tiles in sequence** — each tap
+  on the strip head exposes the next tile from the rest of the strip. The
+  strip can be 3+ tiles long. Sequential screenshots only capture the
+  current head; tiles tapped between screenshots are invisible to the diff
+  tool.
 - Tray has **7 evenly-spaced slots** at the bottom. Loss occurs when all 7
   fill without a triplet.
 - Some stacks are **depth >= 3** (loss state revealed sunflower / dandelion
   tiles that were never visible in earlier states of the same run).
 
-## Anomalies to investigate
+## Resolved anomalies
 
-1. **Empty positions can refill.** Run 1 t=9 had (0,1), (0,3), (1,4), (2,4)
-   as positions with no detection (presumed depth-1 stacks now cleared).
-   Run 1 loss state has tiles at (0,1), (0,3), (2,4) again. Strongly
-   suggests **queue tiles refill main-board cells** when adjacent main slots
-   empty, not just shifting along the queue strip itself.
-2. **Two visually-similar blue butterflies** (`blue_butterfly_a` and
-   `blue_butterfly_b`) get distinct pHashes (distance > 40). Need to verify
-   the game treats them as match-3 distinct or whether this is a
-   recognition false-split.
+1. ~~Empty positions can refill from queues.~~ **Resolved.** They aren't
+   refilling — they're revealing fully-obscured lower tiles in the same
+   stack. The "missing detection" at t=9 was a depth-1 stack that genuinely
+   emptied, and the loss-state tile at the same position is the depth-2
+   tile of a *different* anchor that snapped to that grid position.
+   (Or the t=9 stack was actually depth >= 2 with the next tile fully
+   obscured, and my detector missed it. Either way: no queue-refill mechanic.)
+2. ~~Two distinct blue butterflies.~~ **Resolved.** User confirmed they're
+   the same tile to the game; pHash distance was 44, well below the next
+   nearest pair at 108. Bumped threshold to 60 and merged tile_014 into
+   tile_009.
 
 ## Open questions for the user
 
