@@ -26,8 +26,14 @@ import cv2
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
+from collections import Counter
+
 from src.model.diff import load_state
 from src.solver.reactive import suggest_moves
+from src.vision.all_tiles import (
+    detect_all_tiles, identify_combined, identify_via_intra_screenshot,
+)
+from src.vision.peek import load_library_samples
 
 
 @click.command()
@@ -59,11 +65,55 @@ def main(image_path: Path, level: int, top: int, tiles_dir: Path) -> None:
     state_path = out_dir / "state.json"
     state = load_state(state_path)
 
+    # Tile inventory: bright + dim + tray, count per tile type
+    bgr_for_inventory = cv2.imread(str(image_path))
+    library_samples = load_library_samples(tiles_dir)
+    detections = detect_all_tiles(bgr_for_inventory)
+    bright_dets = [d for d in detections if d.is_bright]
+    dim_dets = [d for d in detections if not d.is_bright]
+    bright_ids: list[str | None] = []
+    for d in bright_dets:
+        crop = bgr_for_inventory[d.y:d.y + d.h, d.x:d.x + d.w]
+        tid, _, _ = identify_combined(crop, library_samples, is_bright=True)
+        bright_ids.append(tid)
+    dim_ids: list[tuple[str | None, float]] = []
+    for d in dim_dets:
+        crop = bgr_for_inventory[d.y:d.y + d.h, d.x:d.x + d.w]
+        tid, sc, _ = identify_via_intra_screenshot(
+            bgr_for_inventory, crop, bright_dets, bright_ids, library_samples,
+        )
+        dim_ids.append((tid, sc))
+
+    inventory: Counter = Counter()
+    for tid in bright_ids:
+        if tid:
+            inventory[tid] += 1
+    for tid, sc in dim_ids:
+        if tid and sc < 0.6:  # only count high-confidence dim IDs
+            inventory[tid] += 1
+    for t in state.tray:
+        if t.tile_id is not None:
+            inventory[t.tile_id] += 1
+
     # Get move recommendations
     moves = suggest_moves(state, label_fn=lab)
 
     tray_filled = sum(1 for t in state.tray if t.tile_id is not None)
     click.echo(f"Tray: {tray_filled}/7. {len(moves)} moves available.")
+    click.echo(f"Visible tile inventory ({sum(inventory.values())} tiles, "
+               f"{len(bright_dets)} bright + {len(dim_dets)} dim + {tray_filled} tray):")
+    for tid, count in sorted(inventory.items(), key=lambda x: -x[1]):
+        # Hidden tile floor: smallest multiple of 3 >= visible_count, minus
+        # visible. Tells us minimum tiles still hidden in the level.
+        min_total = ((count + 2) // 3) * 3
+        hidden_min = min_total - count
+        if hidden_min == 0 and count >= 3:
+            note = "(complete triplet possible NOW)"
+        elif hidden_min > 0:
+            note = f"(>= {hidden_min} hidden)"
+        else:
+            note = ""
+        click.echo(f"  {lab(tid):<18} {count}  {note}")
     click.echo()
     click.echo(f"{'rank':<5} {'score':>7}  {'location':<20} {'tile':<18} reason")
     for i, m in enumerate(moves[:top]):
