@@ -3,36 +3,41 @@
     {
       "tile_id": "tile_001",
       "phash": "eaf7a275ef80f5eaccc9c019909c43a410bd1b739cf29ec21a3ed219f3c0525e",
-      "label": null,
+      "label": "plumeria",
       "samples": [
         "tiles/samples/tile_001_00.jpg",
-        "tiles/samples/tile_001_01.jpg"
+        "tiles/samples/tile_001_01.jpg",
+        "tiles/samples/tile_001_02.jpg"
       ],
       "first_seen": "data/screenshots/level_05/run_01_t000.jpg"
     },
     {
       "tile_id": "tile_002",
       "phash": "baadb714ed109eeba5cedb54e7f27805d6837187362721ca94382748b8758919",
-      "label": null,
+      "label": "butterfly_orb",
       "samples": [
-        "tiles/samples/tile_002_00.jpg"
+        "tiles/samples/tile_002_00.jpg",
+        "tiles/samples/tile_002_01.jpg",
+        "tiles/samples/tile_002_02.jpg"
       ],
       "first_seen": "data/screenshots/level_05/run_01_t000.jpg"
     },
     {
       "tile_id": "tile_003",
       "phash": "e65999a42e79199bce63cd9294e236327c34e538473ccb1d990e3369396cde84",
-      "label": null,
+      "label": "bee",
       "samples": [
         "tiles/samples/tile_003_00.jpg",
-        "tiles/samples/tile_003_01.jpg"
+        "tiles/samples/tile_003_01.jpg",
+        "tiles/samples/tile_003_02.jpg",
+        "tiles/samples/tile_003_03.jpg"
       ],
       "first_seen": "data/screenshots/level_05/run_01_t000.jpg"
     },
     {
       "tile_id": "tile_004",
       "phash": "eba49a6daf991de9b017f9c4a49958a6e4f2ac62d183d87627e15a1b19d10396",
-      "label": null,
+      "label": "pink_daisy",
       "samples": [
         "tiles/samples/tile_004_00.jpg",
         "tiles/samples/tile_004_01.jpg",
@@ -43,7 +48,7 @@
     {
       "tile_id": "tile_005",
       "phash": "f1983932b767472e0b3ba49c9e6444cb5d315e71e3746d264aa24aefb027ad50",
-      "label": null,
+      "label": "pinwheel",
       "samples": [
         "tiles/samples/tile_005_00.jpg",
         "tiles/samples/tile_005_01.jpg",
@@ -54,7 +59,7 @@
     {
       "tile_id": "tile_006",
       "phash": "bb902bdc30f6f42bd30bf4c1d23cc4bf90f3b39d8cb532c5d3809db032c98b30",
-      "label": null,
+      "label": "lantern",
       "samples": [
         "tiles/samples/tile_006_00.jpg",
         "tiles/samples/tile_006_01.jpg",
@@ -66,7 +71,7 @@
     {
       "tile_id": "tile_007",
       "phash": "cdef7cc219361f3f961984b9b64da12ca5925a49c234e72253365d83a5e553c6",
-      "label": null,
+      "label": "swallow",
       "samples": [
         "tiles/samples/tile_007_00.jpg",
         "tiles/samples/tile_007_01.jpg"
@@ -76,117 +81,48 @@
     {
       "tile_id": "tile_008",
       "phash": "bb2f8728f81444f5a1536513872cfa9bd6e20914efc358c3a6c93ccf25ddb046",
-      "label": null,
+      "label": "lotus",
       "samples": [
         "tiles/samples/tile_008_00.jpg",
-        "tiles/samples/tile_008_01.jpg"
+        "tiles/samples/tile_008_01.jpg",
+        "tiles/samples/tile_008_02.jpg"
       ],
       "first_seen": "data/screenshots/level_05/run_01_t000.jpg"
     },
     {
       "tile_id": "tile_009",
       "phash": "de8615fb891d59a0c660f86a96a9c7a3a895e01ef1a2d5e63c66f841e878b7a8",
-      "label": null,
+      "label": "blue_butterfly",
       "samples": [
         "tiles/samples/tile_009_00.jpg",
-        "tiles/samples/tile_009_01.jpg"
+        "tiles/samples/tile_009_01.jpg",
+        "tiles/samples/tile_009_02.jpg"
       ],
       "first_seen": "data/screenshots/level_05/run_01_t000.jpg"
     },
     {
       "tile_id": "tile_010",
-      "phash": "bb3f8728f81445f5a15769158468fa9fd6e20b14e6c359c38489bcce25ddb44c",
-      "label": null,
+      "phash": "b4de79b6f04096719f33c48c51ec7ec28a41a277dc61472359bbe9988e94a49d",
+      "label": "kite",
       "samples": [
-        "tiles/samples/tile_010_00.jpg"
+        "tiles/samples/tile_010_00.jpg",
+        "tiles/samples/tile_010_01.jpg",
+        "tiles/samples/tile_010_02.jpg",
+        "tiles/samples/tile_010_03.jpg",
+        "tiles/samples/tile_010_04.jpg"
       ],
       "first_seen": "data/screenshots/level_05/run_01_t000.jpg"
     },
     {
       "tile_id": "tile_011",
-      "phash": "b4de79b6f04096719f33c48c51ec7ec28a41a277dc61472359bbe9988e94a49d",
-      "label": null,
+      "phash": "bc59c6d9c1937b9fc3b23047cf221cf6233f981936006972ca0fb75819e6427d",
+      "label": "paper_crane",
       "samples": [
         "tiles/samples/tile_011_00.jpg",
-        "tiles/samples/tile_011_01.jpg"
+        "tiles/samples/tile_011_01.jpg",
+        "tiles/samples/tile_011_02.jpg"
       ],
       "first_seen": "data/screenshots/level_05/run_01_t000.jpg"
-    },
-    {
-      "tile_id": "tile_012",
-      "phash": "baadb714ed109eeba5eed954e7f26944d6816187b62721ca943c27483c75a909",
-      "label": null,
-      "samples": [
-        "tiles/samples/tile_012_00.jpg",
-        "tiles/samples/tile_012_01.jpg"
-      ],
-      "first_seen": "data/screenshots/level_05/run_01_t000.jpg"
-    },
-    {
-      "tile_id": "tile_013",
-      "phash": "bc59c6d9c1937b9fc3b23047cf221cf6233f981936006972ca0fb75819e6427d",
-      "label": null,
-      "samples": [
-        "tiles/samples/tile_013_00.jpg",
-        "tiles/samples/tile_013_01.jpg"
-      ],
-      "first_seen": "data/screenshots/level_05/run_01_t000.jpg"
-    },
-    {
-      "tile_id": "tile_014",
-      "phash": "b4ce79b6f06092719fb3c08c51eeeec28243a373dd204723f99fa0988e9ce4cd",
-      "label": null,
-      "samples": [
-        "tiles/samples/tile_014_00.jpg",
-        "tiles/samples/tile_014_01.jpg"
-      ],
-      "first_seen": "data/screenshots/level_05/run_01_t000.jpg"
-    },
-    {
-      "tile_id": "tile_015",
-      "phash": "b61d99b426690d9bce63cc9394f236323c34e538473ceb1c990e332d3d2cdf84",
-      "label": null,
-      "samples": [
-        "tiles/samples/tile_015_00.jpg",
-        "tiles/samples/tile_015_01.jpg"
-      ],
-      "first_seen": "data/screenshots/level_05/run_01_t000.jpg"
-    },
-    {
-      "tile_id": "tile_016",
-      "phash": "b4ce79b6f06892719f33c08c51ec7ec28a41a373dd21472379afe8988e94e4cd",
-      "label": null,
-      "samples": [
-        "tiles/samples/tile_016_00.jpg"
-      ],
-      "first_seen": "data/screenshots/level_05/run_01_t009.jpg"
-    },
-    {
-      "tile_id": "tile_017",
-      "phash": "bc59c4d9c1937b9ec3f2306fce221ce4233f98193600e972da0eb7f819e64279",
-      "label": null,
-      "samples": [
-        "tiles/samples/tile_017_00.jpg"
-      ],
-      "first_seen": "data/screenshots/level_05/run_01_t009.jpg"
-    },
-    {
-      "tile_id": "tile_018",
-      "phash": "eaf3e255ef82f4eaccc9c019b00c4bb410bd1b739cba9ec01b3ed309f3c0525b",
-      "label": null,
-      "samples": [
-        "tiles/samples/tile_018_00.jpg"
-      ],
-      "first_seen": "data/screenshots/level_05/run_01_t009.jpg"
-    },
-    {
-      "tile_id": "tile_019",
-      "phash": "de8715fa891d58a08665e86a96a987a7a991e05ef1a6d5a67866f845e869a7a8",
-      "label": null,
-      "samples": [
-        "tiles/samples/tile_019_00.jpg"
-      ],
-      "first_seen": "data/screenshots/level_05/run_01_t009.jpg"
     }
   ]
 }

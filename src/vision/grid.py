@@ -70,27 +70,46 @@ def assign_grid(detections: list[Detection]) -> list[GridAssignment]:
     typical_h = int(np.median([d.h for d in detections]))
 
     cy_values = [d.cy for d in detections]
-    cx_values = [d.cx for d in detections]
-
     row_assignments = _cluster_centers(cy_values, typical_h)
-    col_assignments = _cluster_centers(cx_values, typical_w)
 
-    # Decide which row clusters are main_board vs queue: queue rows are separated
-    # from main rows by a vertical gap > ~1.2 * tile_h (one tile slot of empty space).
+    # Find the largest gap between row centers — that splits main_board from queues.
+    # (Smaller "first big gap" heuristics fail on mid-game states where row spacing
+    # is uneven; the largest gap is the most robust signal in a clean initial state.)
     distinct_rows = sorted({(r, c) for r, c in row_assignments})
     row_centers = [c for _, c in distinct_rows]
-    queue_threshold_gap = int(typical_h * 1.2)
-
-    last_main_row_idx: int | None = None
-    for i in range(1, len(row_centers)):
-        if row_centers[i] - row_centers[i - 1] > queue_threshold_gap:
-            last_main_row_idx = i - 1
-            break
-    if last_main_row_idx is None:
+    if len(row_centers) >= 2:
+        gaps = [(row_centers[i] - row_centers[i - 1], i - 1) for i in range(1, len(row_centers))]
+        # Only treat a gap as main/queue separator if it's notably larger than typical row spacing
+        max_gap, max_gap_idx = max(gaps)
+        median_gap = int(np.median([g for g, _ in gaps]))
+        if max_gap > median_gap * 1.3:
+            last_main_row_idx = max_gap_idx
+        else:
+            # Fallback: assume queues sit in the bottom 1-2 rows
+            last_main_row_idx = max(0, len(row_centers) - 3)
+    else:
         last_main_row_idx = len(row_centers) - 1
 
+    # Cluster columns separately for main_board vs queue: queue tile cx values can
+    # fall between main-board column centers and break gap-based clustering when
+    # mixed in. Compute main-board columns from main-board detections only.
+    main_idxs = [i for i, (r, _) in enumerate(row_assignments) if r <= last_main_row_idx]
+    main_cx = [detections[i].cx for i in main_idxs]
+    main_col_clusters = _cluster_centers(main_cx, typical_w) if main_cx else []
+
+    queue_idxs = [i for i, (r, _) in enumerate(row_assignments) if r > last_main_row_idx]
+    queue_cx = [detections[i].cx for i in queue_idxs]
+    queue_col_clusters = _cluster_centers(queue_cx, typical_w) if queue_cx else []
+
+    main_col_by_idx = {di: cc for di, cc in zip(main_idxs, main_col_clusters)}
+    queue_col_by_idx = {di: cc for di, cc in zip(queue_idxs, queue_col_clusters)}
+
     out: list[GridAssignment] = []
-    for idx, ((r, _), (c, _)) in enumerate(zip(row_assignments, col_assignments)):
+    for idx, (r, _) in enumerate(row_assignments):
         zone = "main_board" if r <= last_main_row_idx else "queue"
+        if zone == "main_board":
+            c = main_col_by_idx[idx][0]
+        else:
+            c = queue_col_by_idx[idx][0]
         out.append(GridAssignment(detection_idx=idx, row=r, col=c, zone=zone))
     return out

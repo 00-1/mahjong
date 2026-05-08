@@ -1,0 +1,164 @@
+{
+  "anchors": [
+    {
+      "zone": "main_board",
+      "row": 0,
+      "col": 0,
+      "queue_id": null,
+      "cx": 155,
+      "cy": 793
+    },
+    {
+      "zone": "main_board",
+      "row": 0,
+      "col": 1,
+      "queue_id": null,
+      "cx": 382,
+      "cy": 793
+    },
+    {
+      "zone": "main_board",
+      "row": 0,
+      "col": 2,
+      "queue_id": null,
+      "cx": 534,
+      "cy": 793
+    },
+    {
+      "zone": "main_board",
+      "row": 0,
+      "col": 3,
+      "queue_id": null,
+      "cx": 685,
+      "cy": 793
+    },
+    {
+      "zone": "main_board",
+      "row": 0,
+      "col": 4,
+      "queue_id": null,
+      "cx": 837,
+      "cy": 793
+    },
+    {
+      "zone": "main_board",
+      "row": 0,
+      "col": 5,
+      "queue_id": null,
+      "cx": 1064,
+      "cy": 793
+    },
+    {
+      "zone": "main_board",
+      "row": 1,
+      "col": 0,
+      "queue_id": null,
+      "cx": 156,
+      "cy": 956
+    },
+    {
+      "zone": "main_board",
+      "row": 1,
+      "col": 1,
+      "queue_id": null,
+      "cx": 382,
+      "cy": 956
+    },
+    {
+      "zone": "main_board",
+      "row": 1,
+      "col": 4,
+      "queue_id": null,
+      "cx": 837,
+      "cy": 956
+    },
+    {
+      "zone": "main_board",
+      "row": 1,
+      "col": 5,
+      "queue_id": null,
+      "cx": 1064,
+      "cy": 956
+    },
+    {
+      "zone": "main_board",
+      "row": 2,
+      "col": 0,
+      "queue_id": null,
+      "cx": 155,
+      "cy": 1119
+    },
+    {
+      "zone": "main_board",
+      "row": 2,
+      "col": 1,
+      "queue_id": null,
+      "cx": 382,
+      "cy": 1119
+    },
+    {
+      "zone": "main_board",
+      "row": 2,
+      "col": 2,
+      "queue_id": null,
+      "cx": 534,
+      "cy": 1119
+    },
+    {
+      "zone": "main_board",
+      "row": 2,
+      "col": 3,
+      "queue_id": null,
+      "cx": 685,
+      "cy": 1119
+    },
+    {
+      "zone": "main_board",
+      "row": 2,
+      "col": 4,
+      "queue_id": null,
+      "cx": 837,
+      "cy": 1119
+    },
+    {
+      "zone": "main_board",
+      "row": 2,
+      "col": 5,
+      "queue_id": null,
+      "cx": 1064,
+      "cy": 1119
+    },
+    {
+      "zone": "queue",
+      "row": -1,
+      "col": -1,
+      "queue_id": "left_upper",
+      "cx": 465,
+      "cy": 1362
+    },
+    {
+      "zone": "queue",
+      "row": -1,
+      "col": -1,
+      "queue_id": "right_upper",
+      "cx": 754,
+      "cy": 1362
+    },
+    {
+      "zone": "queue",
+      "row": -1,
+      "col": -1,
+      "queue_id": "left_lower",
+      "cx": 314,
+      "cy": 1525
+    },
+    {
+      "zone": "queue",
+      "row": -1,
+      "col": -1,
+      "queue_id": "right_lower",
+      "cx": 906,
+      "cy": 1525
+    }
+  ]
+}

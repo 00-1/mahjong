@@ -16,7 +16,7 @@
         143
       ],
       "tile_id": "tile_001",
-      "stack_depth": null
+      "stack_depth": 1
     },
     {
       "row": 0,
@@ -28,11 +28,11 @@
         143
       ],
       "tile_id": "tile_002",
-      "stack_depth": null
+      "stack_depth": 1
     },
     {
       "row": 0,
-      "col": 1,
+      "col": 2,
       "bbox": [
         463,
         722,
@@ -40,11 +40,11 @@
         143
       ],
       "tile_id": "tile_003",
-      "stack_depth": null
+      "stack_depth": 1
     },
     {
       "row": 0,
-      "col": 2,
+      "col": 3,
       "bbox": [
         614,
         722,
@@ -52,11 +52,11 @@
         143
       ],
       "tile_id": "tile_004",
-      "stack_depth": null
+      "stack_depth": 1
     },
     {
       "row": 0,
-      "col": 2,
+      "col": 4,
       "bbox": [
         766,
         722,
@@ -64,11 +64,11 @@
         143
       ],
       "tile_id": "tile_005",
-      "stack_depth": null
+      "stack_depth": 1
     },
     {
       "row": 0,
-      "col": 3,
+      "col": 5,
       "bbox": [
         993,
         722,
@@ -76,7 +76,7 @@
         143
       ],
       "tile_id": "tile_004",
-      "stack_depth": null
+      "stack_depth": 1
     },
     {
       "row": 1,
@@ -88,7 +88,7 @@
         143
       ],
       "tile_id": "tile_006",
-      "stack_depth": null
+      "stack_depth": 1
     },
     {
       "row": 1,
@@ -100,11 +100,11 @@
         143
       ],
       "tile_id": "tile_007",
-      "stack_depth": null
+      "stack_depth": 1
     },
     {
       "row": 1,
-      "col": 2,
+      "col": 4,
       "bbox": [
         766,
         885,
@@ -112,11 +112,11 @@
         143
       ],
       "tile_id": "tile_008",
-      "stack_depth": null
+      "stack_depth": 1
     },
     {
       "row": 1,
-      "col": 3,
+      "col": 5,
       "bbox": [
         993,
         885,
@@ -124,7 +124,7 @@
         143
       ],
       "tile_id": "tile_009",
-      "stack_depth": null
+      "stack_depth": 1
     },
     {
       "row": 2,
@@ -135,8 +135,8 @@
         143,
         142
       ],
-      "tile_id": "tile_010",
-      "stack_depth": null
+      "tile_id": "tile_008",
+      "stack_depth": 1
     },
     {
       "row": 2,
@@ -147,12 +147,12 @@
         143,
         142
       ],
-      "tile_id": "tile_011",
-      "stack_depth": null
+      "tile_id": "tile_010",
+      "stack_depth": 1
     },
     {
       "row": 2,
-      "col": 1,
+      "col": 2,
       "bbox": [
         463,
         1048,
@@ -160,43 +160,43 @@
         142
       ],
       "tile_id": "tile_008",
-      "stack_depth": null
+      "stack_depth": 1
     },
     {
       "row": 2,
-      "col": 2,
+      "col": 3,
       "bbox": [
         614,
         1048,
         143,
         142
       ],
-      "tile_id": "tile_012",
-      "stack_depth": null
+      "tile_id": "tile_002",
+      "stack_depth": 1
     },
     {
       "row": 2,
-      "col": 2,
+      "col": 4,
       "bbox": [
         766,
         1048,
         142,
         142
       ],
-      "tile_id": "tile_012",
-      "stack_depth": null
+      "tile_id": "tile_002",
+      "stack_depth": 1
     },
     {
       "row": 2,
-      "col": 3,
+      "col": 5,
       "bbox": [
         993,
         1048,
         142,
         142
       ],
-      "tile_id": "tile_013",
-      "stack_depth": null
+      "tile_id": "tile_011",
+      "stack_depth": 1
     }
   ],
   "queues": [
@@ -219,7 +219,7 @@
         143,
         143
       ],
-      "tile_id": "tile_014",
+      "tile_id": "tile_010",
       "queue_remaining": null
     },
     {
@@ -230,7 +230,7 @@
         142,
         143
       ],
-      "tile_id": "tile_015",
+      "tile_id": "tile_003",
       "queue_remaining": null
     },
     {
