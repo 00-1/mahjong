@@ -37,7 +37,7 @@ def main(extractions_dir: Path, tiles_dir: Path) -> None:
     # Group state files by run (run_NN_*). Sort by file mtime so within-run
     # observations are chronological (revealing depth-2 before depth-3).
     states = []
-    for sp in sorted(extractions_dir.glob("*/state.json")):
+    for sp in sorted(extractions_dir.glob("**/state.json")):
         s = json.loads(sp.read_text())
         stem = sp.parent.name
         run = stem.split("_")[1] if stem.startswith("run_") else "?"

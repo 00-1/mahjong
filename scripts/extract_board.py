@@ -141,7 +141,7 @@ def main(image_path: Path, level: int, out_dir: Path | None, tiles_dir: Path, re
     )
 
     if out_dir is None:
-        out_dir = ROOT / "data" / "extractions" / image_path.stem
+        out_dir = ROOT / "data" / "extractions" / f"level_{level:02d}" / image_path.stem
     out_dir.mkdir(parents=True, exist_ok=True)
     state.save(out_dir / "state.json")
     overlay = _annotate(bgr, main_cells, queue_cells, tray_slots, unmatched)
