@@ -14,7 +14,9 @@
         "tiles/samples/tile_001_06.jpg",
         "tiles/samples/tile_001_07.jpg",
         "tiles/samples/tile_001_08.jpg",
-        "tiles/samples/tile_001_09.jpg"
+        "tiles/samples/tile_001_09.jpg",
+        "tiles/samples/tile_001_10.jpg",
+        "tiles/samples/tile_001_11.jpg"
       ],
       "first_seen": "data/screenshots/level_05/run_01_t000.jpg"
     },
@@ -39,7 +41,11 @@
         "tiles/samples/tile_002_13.jpg",
         "tiles/samples/tile_002_14.jpg",
         "tiles/samples/tile_002_15.jpg",
-        "tiles/samples/tile_002_16.jpg"
+        "tiles/samples/tile_002_16.jpg",
+        "tiles/samples/tile_002_17.jpg",
+        "tiles/samples/tile_002_18.jpg",
+        "tiles/samples/tile_002_19.jpg",
+        "tiles/samples/tile_002_20.jpg"
       ],
       "first_seen": "data/screenshots/level_05/run_01_t000.jpg"
     },
@@ -68,7 +74,8 @@
         "tiles/samples/tile_003_17.jpg",
         "tiles/samples/tile_003_18.jpg",
         "tiles/samples/tile_003_19.jpg",
-        "tiles/samples/tile_003_20.jpg"
+        "tiles/samples/tile_003_20.jpg",
+        "tiles/samples/tile_003_21.jpg"
       ],
       "first_seen": "data/screenshots/level_05/run_01_t000.jpg"
     },
@@ -93,7 +100,11 @@
         "tiles/samples/tile_004_13.jpg",
         "tiles/samples/tile_004_14.jpg",
         "tiles/samples/tile_004_15.jpg",
-        "tiles/samples/tile_004_16.jpg"
+        "tiles/samples/tile_004_16.jpg",
+        "tiles/samples/tile_004_17.jpg",
+        "tiles/samples/tile_004_18.jpg",
+        "tiles/samples/tile_004_19.jpg",
+        "tiles/samples/tile_004_20.jpg"
       ],
       "first_seen": "data/screenshots/level_05/run_01_t000.jpg"
     },
@@ -117,7 +128,8 @@
         "tiles/samples/tile_005_12.jpg",
         "tiles/samples/tile_005_13.jpg",
         "tiles/samples/tile_005_14.jpg",
-        "tiles/samples/tile_005_15.jpg"
+        "tiles/samples/tile_005_15.jpg",
+        "tiles/samples/tile_005_16.jpg"
       ],
       "first_seen": "data/screenshots/level_05/run_01_t000.jpg"
     },
@@ -140,7 +152,8 @@
         "tiles/samples/tile_006_11.jpg",
         "tiles/samples/tile_006_12.jpg",
         "tiles/samples/tile_006_13.jpg",
-        "tiles/samples/tile_006_14.jpg"
+        "tiles/samples/tile_006_14.jpg",
+        "tiles/samples/tile_006_15.jpg"
       ],
       "first_seen": "data/screenshots/level_05/run_01_t000.jpg"
     },
@@ -166,7 +179,8 @@
         "tiles/samples/tile_007_14.jpg",
         "tiles/samples/tile_007_15.jpg",
         "tiles/samples/tile_007_16.jpg",
-        "tiles/samples/tile_007_17.jpg"
+        "tiles/samples/tile_007_17.jpg",
+        "tiles/samples/tile_007_18.jpg"
       ],
       "first_seen": "data/screenshots/level_05/run_01_t000.jpg"
     },
@@ -186,7 +200,11 @@
         "tiles/samples/tile_008_08.jpg",
         "tiles/samples/tile_008_09.jpg",
         "tiles/samples/tile_008_10.jpg",
-        "tiles/samples/tile_008_11.jpg"
+        "tiles/samples/tile_008_11.jpg",
+        "tiles/samples/tile_008_12.jpg",
+        "tiles/samples/tile_008_13.jpg",
+        "tiles/samples/tile_008_14.jpg",
+        "tiles/samples/tile_008_15.jpg"
       ],
       "first_seen": "data/screenshots/level_05/run_01_t000.jpg"
     },
@@ -217,7 +235,11 @@
         "tiles/samples/tile_009_19.jpg",
         "tiles/samples/tile_014_00.jpg",
         "tiles/samples/tile_014_01.jpg",
-        "tiles/samples/tile_014_02.jpg"
+        "tiles/samples/tile_014_02.jpg",
+        "tiles/samples/tile_009_23.jpg",
+        "tiles/samples/tile_009_24.jpg",
+        "tiles/samples/tile_009_25.jpg",
+        "tiles/samples/tile_009_26.jpg"
       ],
       "first_seen": "data/screenshots/level_05/run_01_t000.jpg"
     },
@@ -243,7 +265,12 @@
         "tiles/samples/tile_010_14.jpg",
         "tiles/samples/tile_010_15.jpg",
         "tiles/samples/tile_010_16.jpg",
-        "tiles/samples/tile_010_17.jpg"
+        "tiles/samples/tile_010_17.jpg",
+        "tiles/samples/tile_010_18.jpg",
+        "tiles/samples/tile_010_19.jpg",
+        "tiles/samples/tile_010_20.jpg",
+        "tiles/samples/tile_010_21.jpg",
+        "tiles/samples/tile_010_22.jpg"
       ],
       "first_seen": "data/screenshots/level_05/run_01_t000.jpg"
     },
@@ -299,7 +326,11 @@
         "tiles/samples/tile_013_02.jpg",
         "tiles/samples/tile_013_03.jpg",
         "tiles/samples/tile_013_04.jpg",
-        "tiles/samples/tile_013_05.jpg"
+        "tiles/samples/tile_013_05.jpg",
+        "tiles/samples/tile_013_06.jpg",
+        "tiles/samples/tile_013_07.jpg",
+        "tiles/samples/tile_013_08.jpg",
+        "tiles/samples/tile_013_09.jpg"
       ],
       "first_seen": "data/screenshots/level_05/run_01_loss.jpg"
     }
