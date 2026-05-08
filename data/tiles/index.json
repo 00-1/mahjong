@@ -162,7 +162,9 @@
       "label": "clover",
       "samples": [
         "tiles/samples/tile_014_00.jpg",
-        "tiles/samples/tile_014_01.jpg"
+        "tiles/samples/tile_014_01.jpg",
+        "tiles/samples/tile_014_02.jpg",
+        "tiles/samples/tile_014_03.jpg"
       ],
       "first_seen": "data/screenshots/level_06/run_01_loss.jpg"
     }
