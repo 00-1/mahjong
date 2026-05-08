@@ -18,7 +18,9 @@ import cv2
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from src.vision.all_tiles import detect_all_tiles, identify_combined
+from src.vision.all_tiles import (
+    detect_all_tiles, identify_combined, identify_via_intra_screenshot,
+)
 from src.vision.peek import load_library_samples
 
 
@@ -49,10 +51,25 @@ def main(image_path: Path, level: int, tiles_dir: Path, out_overlay: Path | None
     click.echo(f"Detected {len(detections)} tiles ({bright_count} bright, {dim_count} dim)")
     click.echo()
 
+    # First pass: identify all bright tiles via global library
+    bright_detections = [d for d in detections if d.is_bright]
+    bright_ids: list[str | None] = []
+    for d in bright_detections:
+        crop = bgr[d.y:d.y + d.h, d.x:d.x + d.w]
+        tid, _, _ = identify_combined(crop, library_samples, is_bright=True)
+        bright_ids.append(tid)
+
     overlay = bgr.copy()
+    all_results: list[tuple] = []
     for d in detections:
         crop = bgr[d.y:d.y + d.h, d.x:d.x + d.w]
-        tile_id, score, all_scores = identify_combined(crop, library_samples, is_bright=d.is_bright)
+        if d.is_bright:
+            tile_id, score, all_scores = identify_combined(crop, library_samples, is_bright=True)
+        else:
+            # Use intra-screenshot reference matching for dim/partial tiles.
+            tile_id, score, all_scores = identify_via_intra_screenshot(
+                bgr, crop, bright_detections, bright_ids, library_samples,
+            )
         sorted_scores = sorted(all_scores.values())
         runner_up = sorted_scores[1] if len(sorted_scores) > 1 else float("inf")
         confidence = (runner_up - score) / max(0.001, runner_up + score)

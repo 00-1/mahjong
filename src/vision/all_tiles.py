@@ -278,6 +278,87 @@ def identify_half_tile(
     return best, scores[best], scores
 
 
+def identify_via_intra_screenshot(
+    bgr: np.ndarray,
+    target_crop: np.ndarray,
+    bright_detections: list,
+    bright_ids: list[str | None],
+    library_samples: dict[str, np.ndarray],
+) -> tuple[str | None, float, dict[str, float]]:
+    """Identify a target crop by matching it against the bright tiles in the
+    SAME screenshot (which have known IDs from the library).
+
+    Within a single screenshot, lighting/render conditions are uniform, so a
+    dim or partial crop of tile X should match the bright crop of tile X in
+    the same image more reliably than it matches a globally-loaded library
+    sample of tile X (which may have different lighting).
+    """
+    # Build per-tile reference set: collect bright crops grouped by ID
+    refs_by_id: dict[str, list[np.ndarray]] = {}
+    for d, tid in zip(bright_detections, bright_ids):
+        if tid is None:
+            continue
+        crop = bgr[d.y:d.y + d.h, d.x:d.x + d.w]
+        refs_by_id.setdefault(tid, []).append(crop)
+
+    # For tiles that don't appear bright in this screenshot, fall back to
+    # global library samples
+    all_tile_ids = set(library_samples.keys())
+    for tid in all_tile_ids:
+        if tid not in refs_by_id:
+            refs_by_id[tid] = [library_samples[tid]]
+
+    h_in, w_in = target_crop.shape[:2]
+    is_vertical = h_in > 1.4 * w_in
+    is_horizontal = w_in > 1.4 * h_in
+
+    target_gray = cv2.cvtColor(target_crop, cv2.COLOR_BGR2GRAY)
+    target_eq = cv2.equalizeHist(target_gray)
+
+    # Hue-based candidate filtering first
+    target_hue = _dominant_hue(target_crop)
+    candidates = []
+    for tid in all_tile_ids:
+        # use first ref for hue check
+        ref_hue = _dominant_hue(refs_by_id[tid][0])
+        if target_hue is None or ref_hue is None:
+            candidates.append(tid)
+            continue
+        diff = abs(target_hue - ref_hue)
+        diff = min(diff, 180 - diff)
+        if diff <= 20:
+            candidates.append(tid)
+    if not candidates:
+        candidates = list(all_tile_ids)
+
+    scores: dict[str, float] = {}
+    for tid in candidates:
+        best_ncc_for_tile = -1.0
+        for ref in refs_by_id[tid]:
+            sh, sw = ref.shape[:2]
+            cands = []
+            if is_vertical:
+                cands.append(ref[:, :sw // 2])
+                cands.append(ref[:, sw // 2:])
+            elif is_horizontal:
+                cands.append(ref[:sh // 2, :])
+                cands.append(ref[sh // 2:, :])
+            else:
+                cands.append(ref)
+            for c in cands:
+                cr = cv2.resize(c, (w_in, h_in))
+                cg = cv2.equalizeHist(cv2.cvtColor(cr, cv2.COLOR_BGR2GRAY))
+                ncc = float(cv2.matchTemplate(target_eq, cg, cv2.TM_CCOEFF_NORMED)[0, 0])
+                if ncc > best_ncc_for_tile:
+                    best_ncc_for_tile = ncc
+        scores[tid] = 1.0 - best_ncc_for_tile
+    for tid in all_tile_ids:
+        if tid not in scores:
+            scores[tid] = 2.0
+    best = min(scores, key=scores.get)
+    return best, scores[best], scores
+
+
 def identify_combined(
     bgr_crop: np.ndarray,
     library_samples: dict[str, np.ndarray],
