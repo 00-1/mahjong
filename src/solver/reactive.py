@@ -59,6 +59,32 @@ def _tray_filled_slots(state: BoardState) -> int:
     return sum(1 for t in state.tray if t.tile_id is not None)
 
 
+@dataclass
+class TripletPlan:
+    """A complete triplet that can be executed in the current state."""
+    tile_id: str
+    tap_locations: list[str]  # sequence of taps (length 3, minus any tray tiles)
+    tray_already: int  # how many of this tile are already in tray
+    taps_needed: int
+
+
+def plan_triplets(state: BoardState) -> list[TripletPlan]:
+    """Return all triplets executable from current state, ordered by cost."""
+    triplets = find_triplets(state)
+    plans: list[TripletPlan] = []
+    for c in triplets:
+        non_tray = [f for f in c.faces if not f.location.startswith("tray:")]
+        tray_count = 3 - len(non_tray)
+        plans.append(TripletPlan(
+            tile_id=c.tile_id,
+            tap_locations=[f.location for f in non_tray],
+            tray_already=tray_count,
+            taps_needed=len(non_tray),
+        ))
+    plans.sort(key=lambda p: p.taps_needed)
+    return plans
+
+
 def suggest_moves(state: BoardState, label_fn=None) -> list[Move]:
     """Return ranked list of next-tap suggestions.
 

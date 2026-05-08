@@ -29,7 +29,7 @@ sys.path.insert(0, str(ROOT))
 from collections import Counter
 
 from src.model.diff import load_state
-from src.solver.reactive import suggest_moves
+from src.solver.reactive import plan_triplets, suggest_moves
 from src.vision.all_tiles import (
     detect_all_tiles, identify_combined, identify_via_intra_screenshot,
 )
@@ -84,21 +84,37 @@ def main(image_path: Path, level: int, top: int, tiles_dir: Path) -> None:
         )
         dim_ids.append((tid, sc))
 
-    inventory: Counter = Counter()
+    bright_inventory: Counter = Counter()
+    dim_inventory: Counter = Counter()
+    tray_inventory: Counter = Counter()
     for tid in bright_ids:
         if tid:
-            inventory[tid] += 1
+            bright_inventory[tid] += 1
     for tid, sc in dim_ids:
         if tid and sc < 0.6:  # only count high-confidence dim IDs
-            inventory[tid] += 1
+            dim_inventory[tid] += 1
     for t in state.tray:
         if t.tile_id is not None:
-            inventory[t.tile_id] += 1
+            tray_inventory[t.tile_id] += 1
+    inventory = bright_inventory + dim_inventory + tray_inventory
 
     # Get move recommendations
     moves = suggest_moves(state, label_fn=lab)
+    plans = plan_triplets(state)
 
     tray_filled = sum(1 for t in state.tray if t.tile_id is not None)
+
+    if plans:
+        click.echo(f"\n=== Triplet plan ({len(plans)} ready triplets) ===")
+        running_tray = tray_filled
+        for plan in plans:
+            running_tray += plan.taps_needed - 3  # net change after triplet clears
+            tap_str = " -> ".join(plan.tap_locations)
+            tray_note = f" [+{plan.tray_already} from tray]" if plan.tray_already else ""
+            click.echo(f"  3x {lab(plan.tile_id)}: {tap_str}{tray_note}")
+        click.echo()
+    else:
+        click.echo("\n=== No completable triplets right now ===\n")
     click.echo(f"Tray: {tray_filled}/7. {len(moves)} moves available.")
     click.echo(f"Visible tile inventory ({sum(inventory.values())} tiles, "
                f"{len(bright_dets)} bright + {len(dim_dets)} dim + {tray_filled} tray):")
@@ -107,13 +123,22 @@ def main(image_path: Path, level: int, top: int, tiles_dir: Path) -> None:
         # visible. Tells us minimum tiles still hidden in the level.
         min_total = ((count + 2) // 3) * 3
         hidden_min = min_total - count
-        if hidden_min == 0 and count >= 3:
-            note = "(complete triplet possible NOW)"
+        b = bright_inventory.get(tid, 0)
+        d = dim_inventory.get(tid, 0)
+        t = tray_inventory.get(tid, 0)
+        # "Tappable now" = bright + tray. Triplet completable when bright + tray >= 3.
+        tappable_now = b + t
+        if tappable_now >= 3:
+            note = "(triplet ready: tap " + str(b) + " bright)"
+        elif b + d + t >= 3:
+            blocked = (3 - tappable_now)
+            note = f"(triplet possible if {blocked} dim unblocked)"
         elif hidden_min > 0:
             note = f"(>= {hidden_min} hidden)"
         else:
             note = ""
-        click.echo(f"  {lab(tid):<18} {count}  {note}")
+        breakdown = f"{b}b" + (f"+{d}d" if d else "") + (f"+{t}T" if t else "")
+        click.echo(f"  {lab(tid):<18} {count}  ({breakdown})  {note}")
     click.echo()
     click.echo(f"{'rank':<5} {'score':>7}  {'location':<20} {'tile':<18} reason")
     for i, m in enumerate(moves[:top]):
