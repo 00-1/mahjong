@@ -25,7 +25,7 @@ from PIL import Image
 
 
 HASH_SIZE = 16  # 16x16 = 256-bit phash
-DEFAULT_HAMMING_THRESHOLD = 28  # out of 256 bits — empirically separates same-art (<=26) from different-art tiles
+DEFAULT_HAMMING_THRESHOLD = 60  # out of 256: same-art pairs observed up to 44; different-art >= 108
 
 
 @dataclass

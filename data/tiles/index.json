@@ -193,7 +193,7 @@
     {
       "tile_id": "tile_009",
       "phash": "de8615fb891d59a0c660f86a96a9c7a3a895e01ef1a2d5e63c66f841e878b7a8",
-      "label": "blue_butterfly_a",
+      "label": "blue_butterfly",
       "samples": [
         "tiles/samples/tile_009_00.jpg",
         "tiles/samples/tile_009_01.jpg",
@@ -214,7 +214,10 @@
         "tiles/samples/tile_009_16.jpg",
         "tiles/samples/tile_009_17.jpg",
         "tiles/samples/tile_009_18.jpg",
-        "tiles/samples/tile_009_19.jpg"
+        "tiles/samples/tile_009_19.jpg",
+        "tiles/samples/tile_014_00.jpg",
+        "tiles/samples/tile_014_01.jpg",
+        "tiles/samples/tile_014_02.jpg"
       ],
       "first_seen": "data/screenshots/level_05/run_01_t000.jpg"
     },
@@ -297,17 +300,6 @@
         "tiles/samples/tile_013_03.jpg",
         "tiles/samples/tile_013_04.jpg",
         "tiles/samples/tile_013_05.jpg"
-      ],
-      "first_seen": "data/screenshots/level_05/run_01_loss.jpg"
-    },
-    {
-      "tile_id": "tile_014",
-      "phash": "dfc210af880c5da1f370fc2a82b982b3ac90f01ff5a2d0f63c27fc44e83cb7b8",
-      "label": "blue_butterfly_b",
-      "samples": [
-        "tiles/samples/tile_014_00.jpg",
-        "tiles/samples/tile_014_01.jpg",
-        "tiles/samples/tile_014_02.jpg"
       ],
       "first_seen": "data/screenshots/level_05/run_01_loss.jpg"
     }
