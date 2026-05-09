@@ -207,6 +207,36 @@ Concrete instance: the **Challenge Again** button on the lose screen
 read as small y≈770 (suggesting phone y≈2310), but its actual full-res
 position was y=1948 — taps at 2310 / 2340 missed entirely.
 
+## Open — session.py + restart.py + game_over_at_start stalemate
+
+Reproduced session-12 (after the UCT pull): once the puzzle is in
+the tray-full pre-modal state (no Tip dialog showing, just
+`tray_filled == 7` on the board), every following autoplay attempt
+exits at step 0 with `status=abandoned, reason=game_over_at_start`.
+
+session.py only invokes `restart.py` between attempts when the prior
+status was `lost`. `abandoned` skips restart. So the loop is:
+- attempt N: GAME_OVER detected, exits abandoned → no restart fires
+- attempt N+1: same screen, same outcome
+- … halts at `max_consecutive_abandoned`.
+
+Two complementary fixes worth doing:
+1. `session.py`: also call `restart.py` between attempts when the
+   prior status was `abandoned` AND `reason=game_over_at_start`. The
+   recovery is the same — Discard + Challenge Again.
+2. `restart.py`: if the modal isn't visible (tray full but pre-modal),
+   tap a tappable tile first to *trigger* it, then proceed with
+   Discard + Challenge Again. Today the LLM agent has to do this by
+   hand (`adb shell input tap 540 840` on a known bright tile).
+
+Until those land: when this happens, run
+
+```
+adb shell input tap 540 840   # any bright tile to trigger the modal
+python scripts/restart.py     # discard + challenge again
+python scripts/session.py ... # rerun
+```
+
 ## Open — restart leaves screen in unrecoverable state
 
 After the 5aca586 fixes (post-pull session 9), session.py ran 4
