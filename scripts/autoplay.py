@@ -129,6 +129,7 @@ def main() -> int:
     consecutive_missed_taps = 0
     consecutive_unchanged = 0  # state didn't change after tap (potentially-stuck)
     last_state = None
+    pre_npz_state = None  # last state where the puzzle WAS visible (for heuristic_outcome)
     last_dim_predictions: list = []  # for verifying against next bright state
     run_started = time.time()
     levels_root = ROOT / "data" / "levels"
@@ -170,6 +171,9 @@ def main() -> int:
             save_meta(runs_dir, meta)
             last_state = state_dict
             reason = decision.get("reason_code", "")
+            # Track the most recent state where the puzzle was actually visible
+            if reason != "NOT_A_PUZZLE":
+                pre_npz_state = state_dict
 
             log.emit(
                 "decision", step=step, reason=reason,
@@ -218,10 +222,13 @@ def main() -> int:
                     consecutive_not_a_puzzle += 1
                     log.emit("not_a_puzzle", step=step, consecutive=consecutive_not_a_puzzle)
                     if consecutive_not_a_puzzle >= 5:
-                        final_status = heuristic_outcome(last_state)
+                        # Use BOTH last and pre-NOT_A_PUZZLE state for context
+                        final_status = heuristic_outcome(last_state, previous_state=pre_npz_state)
                         final_reason = "5x_not_a_puzzle"
                         log.emit("stop_by_heuristic", step=step,
-                                 outcome=final_status, last_state_size=len(last_state.get("main_board", []) if last_state else []))
+                                 outcome=final_status,
+                                 pre_npz_main=len(pre_npz_state.get("main_board", []) if pre_npz_state else []),
+                                 pre_npz_tray=sum(1 for t in pre_npz_state.get("tray", []) if t.get("tile_id")) if pre_npz_state else 0)
                         break
                     time.sleep(2.0)
                     # Re-snap and try again

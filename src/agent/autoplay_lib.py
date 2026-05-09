@@ -133,15 +133,23 @@ def adaptive_wait_for_change(
     return last_state, last_size, elapsed
 
 
-def heuristic_outcome(last_state: dict | None) -> str:
+def heuristic_outcome(last_state: dict | None,
+                      previous_state: dict | None = None) -> str:
     """Given the final state observed before a NOT_A_PUZZLE / abandon,
     guess won vs lost vs abandoned.
 
-    Heuristics:
-    - If the last state had < 3 tiles total visible: probably won
-      (the board was nearly empty, then cleared = level complete).
+    Heuristics (in priority order):
     - If the last state had tray at 7: lost (game over).
+    - If last state has 0 visible tiles AND previous state had a near-full
+      tray: lost via the "Use Discard or Withdraw" modal flow.
+    - If last state had < 3 tiles total AND previous state was near-empty
+      with no full tray: probably won.
     - Otherwise: abandoned (couldn't tell).
+
+    Note: we used to call any 'no tiles after several NOT_A_PUZZLE' a win,
+    but the post-loss modal also produces 'no tiles' — so we now require
+    a previous state showing the puzzle was nearly complete before
+    declaring victory.
     """
     if last_state is None:
         return "abandoned"
@@ -151,6 +159,24 @@ def heuristic_outcome(last_state: dict | None) -> str:
     total_visible = main_count + queue_count
     if tray_filled >= 7:
         return "lost"
-    if total_visible < 3:
-        return "won"
+
+    if previous_state is not None:
+        prev_tray = sum(1 for t in previous_state.get("tray", []) if t.get("tile_id"))
+        prev_main = len(previous_state.get("main_board", []))
+        prev_queue = len(previous_state.get("queues", []))
+        prev_total = prev_main + prev_queue
+
+        # Modal-on-tray-full: previous tray was near full, we lost a triplet
+        # race, modal appeared blocking the puzzle. NOT a win.
+        if prev_tray >= 5 and total_visible == 0:
+            return "lost"
+
+        # Genuine clear: previous state had very few tiles, board cleared
+        # naturally, level-complete popup appeared.
+        if prev_total <= 6 and prev_tray < 3 and total_visible == 0:
+            return "won"
+
+    # Fallback: with no context, conservative call
+    if total_visible < 3 and tray_filled < 3:
+        return "abandoned"  # used to be "won" — too risky without context
     return "abandoned"

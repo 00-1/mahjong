@@ -126,22 +126,45 @@ def suggest_moves(state: BoardState, label_fn=None) -> list[Move]:
                 reason=f"3x {label_fn(f.tile_id)}: tap {sequence_str}",
             ))
 
-    # 2. Moves that don't help but don't hurt much (just fill tray)
+    # 2. Moves that don't help but don't hurt much (just fill tray).
+    # Within EXPLORE moves, prefer taps that have higher chance of leading to
+    # future triplets. Heuristics (in order of preference):
+    #
+    # a) tile already 2-in-tray: tapping it completes a triplet from tray
+    # b) tile has 3+ visible: future triplet possible if we don't break the set
+    # c) tile is a "queue" position: tapping it advances the queue, may
+    #    reveal a more useful tile (queues replenish, so cheaper to drain)
+    # d) tapping a tile of a type with low visible_count reduces our
+    #    chance of completing that tile's triplet — penalize
     for f in tappable:
         if f.tile_id in triplet_tile_ids:
-            continue  # already covered above
+            continue
         already_in_tray = tray_count.get(f.tile_id, 0)
         becomes_in_tray = already_in_tray + 1
         if becomes_in_tray == 3:
-            # Tapping this would complete a triplet directly from tray (would
-            # have been caught by find_triplets unless it's an off-by-one case)
             score = 8.0
         elif tray_filled + 1 >= 7 and becomes_in_tray < 3:
-            score = -100.0  # tap fills tray, no triplet
+            score = -100.0
         else:
-            score = -2.0 * (1 + tray_filled / 7)  # higher penalty when tray is fuller
-            if visible_count.get(f.tile_id, 0) >= 3:
+            # Base penalty grows with tray fullness
+            score = -2.0 * (1 + tray_filled / 7)
+            visible_total = visible_count.get(f.tile_id, 0)
+            if visible_total >= 3:
                 score += 3  # at least 3 visible — eventual triplet possible
+            if already_in_tray == 2:
+                score += 5  # almost a triplet from tray
+            elif already_in_tray == 1:
+                score += 1  # halfway to a tray triplet
+            # Prefer queue locations as exploratory taps — queues
+            # replenish, so they're a renewable resource. (Empirically
+            # queue tiles often "advance" rather than truly disappear.)
+            if f.location.startswith("queue:"):
+                score += 0.5
+            # Penalize tapping orphan tiles (only 1 of this type visible
+            # and 0 in tray) — almost certainly puts a "doomed" tile in
+            # the tray that can't form a triplet without uncovering more.
+            if visible_total == 1 and already_in_tray == 0:
+                score -= 1.5
         moves.append(Move(
             location=f.location,
             tile_id=f.tile_id,
