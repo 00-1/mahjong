@@ -40,6 +40,12 @@ from src.agent.dim_learn import (
     predict_dim,
     verify_predictions_vs_state,
 )
+from src.agent.occult import (
+    aggregate_occult_accuracy,
+    predict_occult_at_anchors,
+    update_anchor_priors,
+    verify_anchor_predictions,
+)
 from src.agent.run import end_run, record_step, save_meta, start_run
 from src.agent.stats import integrate_run
 from src.agent.verify import verify_tap, verify_triplet_burst
@@ -103,6 +109,10 @@ def main() -> int:
     p.add_argument("--learn-dim", action="store_true",
                    help="Predict dim tiles each step + verify against next state's bright tiles. "
                         "Adds ~0.5-1s per step but builds dim-ID accuracy training data.")
+    p.add_argument("--learn-occult", action="store_true",
+                   help="Anchor-driven occult prediction (multi-method ensemble incl. ORB). "
+                        "Slower than --learn-dim (~1.5-3s/step) but much higher accuracy. "
+                        "Writes data/levels/NN/occult_accuracy.json + anchor_priors.json.")
     args = p.parse_args()
 
     device_arg = ["-s", args.device] if args.device else []
@@ -130,10 +140,26 @@ def main() -> int:
     consecutive_unchanged = 0  # state didn't change after tap (potentially-stuck)
     last_state = None
     pre_npz_state = None  # last state where the puzzle WAS visible (for heuristic_outcome)
-    last_dim_predictions: list = []  # for verifying against next bright state
+    last_dim_predictions: list = []  # for verifying against next bright state (--learn-dim)
+    last_occult_predictions: dict = {}  # anchor-keyed predictions (--learn-occult)
     run_started = time.time()
     levels_root = ROOT / "data" / "levels"
     run_root = runs_dir / run_id
+
+    # Lazy-loaded — only when --learn-occult requested
+    _template_for_occult = None
+    _library_samples_for_occult = None
+    def _occult_setup():
+        nonlocal _template_for_occult, _library_samples_for_occult
+        if _template_for_occult is None:
+            from src.vision.template import load_template, scale_template
+            tp = ROOT / "data" / "levels" / f"{args.level:02d}" / "template.json"
+            if tp.exists():
+                _template_for_occult = load_template(tp)
+        if _library_samples_for_occult is None:
+            from src.vision.peek import load_library_samples
+            _library_samples_for_occult = load_library_samples(args.tiles_dir)
+        return _template_for_occult, _library_samples_for_occult
 
     # Initial snapshot
     shot_path = args.shot_dir / f"autoplay_{run_id}_init.png"
@@ -200,7 +226,6 @@ def main() -> int:
                 dim_t0 = time.time()
                 preds = predict_dim(shot_path, args.level, args.tiles_dir)
                 dim_ms = int((time.time() - dim_t0) * 1000)
-                # Save predictions per step for offline analysis
                 pred_path = run_root / f"t{step:03d}.dim_predictions.json"
                 pred_path.write_text(json.dumps([
                     {**vars(p), "bbox": list(p.bbox)} for p in preds
@@ -210,6 +235,55 @@ def main() -> int:
                          dim_ms=dim_ms,
                          confident=sum(1 for p in preds if p.confidence_score < 0.5))
                 last_dim_predictions = preds
+
+            # Occult prediction: anchor-driven, multi-method ensemble (better)
+            if args.learn_occult:
+                # Verify last step's occult predictions
+                if last_occult_predictions:
+                    comparisons = verify_anchor_predictions(last_occult_predictions, state_dict)
+                    if comparisons:
+                        correct = sum(1 for c in comparisons if c["correct"])
+                        log.emit("occult_verify", step=step,
+                                 total=len(comparisons), correct=correct,
+                                 comparisons=comparisons)
+                        if not args.no_stats:
+                            aggregate_occult_accuracy(levels_root, args.level, comparisons)
+
+                # Predict for next step
+                template_for_occult, library_samples = _occult_setup()
+                if template_for_occult is not None and library_samples:
+                    import cv2
+                    bgr = cv2.imread(str(shot_path))
+                    if bgr is not None:
+                        # Build set of currently-bright anchor keys
+                        bright_keys = set()
+                        for c in state_dict.get("main_board", []):
+                            if c.get("tile_id"):
+                                bright_keys.add(("main_board", c["row"], c["col"]))
+                        for q in state_dict.get("queues", []):
+                            if q.get("tile_id"):
+                                bright_keys.add(("queue", q["queue_id"]))
+
+                        occult_t0 = time.time()
+                        preds = predict_occult_at_anchors(
+                            bgr, template_for_occult, bright_keys, library_samples,
+                        )
+                        occult_ms = int((time.time() - occult_t0) * 1000)
+                        # Save per-step
+                        pred_path = run_root / f"t{step:03d}.occult_predictions.json"
+                        pred_path.write_text(json.dumps([
+                            {"anchor_key": list(k), **{kk: vv for kk, vv in vars(p).items() if kk != "anchor_key"}}
+                            for k, p in preds.items()
+                        ], indent=2))
+                        log.emit("occult_predict", step=step,
+                                 predictions_count=len(preds),
+                                 occult_ms=occult_ms,
+                                 high_confidence=sum(1 for p in preds.values() if p.confidence >= 0.5))
+                        last_occult_predictions = preds
+
+                # Update per-anchor priors from this step's bright state
+                if not args.no_stats:
+                    update_anchor_priors(levels_root, args.level, state_dict)
 
             # Terminal states
             if decision.get("should_stop"):

@@ -106,22 +106,36 @@ Every `--health-check-interval` steps (default 20), autoplay verifies
 the ADB device is still reachable. If not, abandons cleanly with
 status=abandoned, reason=adb_disconnected.
 
-### Dim-tile learning loop (optional, `--learn-dim`)
+### Occult-tile learning loop (`--learn-occult`, recommended)
 
-Adds ~0.5-1s per step but builds training data for the partial-occlusion
-identifier:
+Better than `--learn-dim`: anchor-driven sampling + multi-method ensemble
+including ORB shape matching for color-cluster disambiguation.
 
-1. Each step, predict dim tiles in the current screenshot via intra-
-   screenshot reference matching. Save to `tNNN.dim_predictions.json`.
-2. On the NEXT step, when a previously-dim anchor now has a bright tile,
-   compare the prediction to the actual reveal.
-3. Aggregate per-level: `data/levels/NN/dim_accuracy.json` tracks
-   `total / correct`, `by_predicted` and `by_actual` tile breakdowns,
-   confusion matrix (`predicted->actual`), and accuracy bucketed by
-   confidence score (`high`: <0.3, `med`: 0.3-0.6, `low`: >=0.6).
+For each template anchor that doesn't currently have a bright tile:
+1. Sample at the anchor center + each of 9 lean offsets (origin + 8
+   diagonal/cardinal half-tile shifts)
+2. Pre-filter (is there even a tile here? via brightness + saturation)
+3. Identify with weighted rank fusion of pHash + NCC + HSV histogram +
+   ORB keypoints
+4. Pick the offset position with highest confidence
 
-Use this when running for the express purpose of improving the dim
-identifier. Skip for time-pressured win-the-level runs.
+After each tap, when a previously-occult anchor becomes bright, compare
+prediction to actual. Aggregates to:
+
+- `data/levels/NN/occult_accuracy.json`: total/correct, per-tile
+  breakdowns, confusion matrix, accuracy bucketed by confidence
+  (`high` >=0.5, `med` 0.25-0.5, `low` <0.25), method-agreement
+  diagnostics
+- `data/levels/NN/anchor_priors.json`: which tile types appear at each
+  anchor at each depth, across all runs. Foundation for solver-side
+  priors.
+
+Cost: ~1.5-3s per step. Skip for time-pressured win-the-level runs.
+
+### Dim-tile learning loop (`--learn-dim`, legacy)
+
+Older intra-screenshot prediction. Use `--learn-occult` instead unless
+specifically debugging the older path.
 
 ### Loop detection
 
@@ -141,6 +155,59 @@ With autoplay + session.py, the LLM agent only handles:
    level list
 
 For the play loop itself, zero LLM context cycles per move.
+
+## Restart-after-loss flow
+
+`scripts/restart.py` automates the post-loss recovery sequence (modal -> Discard -> Lose -> Challenge Again -> back to puzzle):
+
+```bash
+# First-time calibration: agent identifies the buttons via screenshot,
+# then runs once with their coords:
+python scripts/restart.py \
+    --discard-x 950 --discard-y 1500 \
+    --challenge-again-x 610 --challenge-again-y 2100
+
+# Subsequent restarts (config saved to data/restart_config.json):
+python scripts/restart.py
+```
+
+Returns 0 once the fresh puzzle gameplay screen is detected (uses the
+same tile-face-count heuristic as `agent.py check`). Returns 2 if config
+is missing (first run requires the calibration flags).
+
+**Integration with session.py**: the natural pattern is
+
+```bash
+python scripts/autoplay.py --level 8 || python scripts/restart.py
+```
+
+When autoplay returns non-zero (lost or abandoned), restart.py runs the
+recovery flow without any LLM intervention.
+
+## Strategy refinement
+
+`scripts/replay_run.py` analyzes accumulated runs to surface losing patterns:
+
+```bash
+# Replay a specific run
+python scripts/replay_run.py run_20260509_112851_l08
+
+# Across all losing runs, output cross-run patterns + suggestions
+python scripts/replay_run.py --all-lost --suggest-improvements
+```
+
+For each run it identifies:
+- **Strategic peak**: last step where solver had a TRIPLET-completing move
+- **Fork**: first EXPLORE step (no triplet available) — where strategy began to fail
+- **Tray progression after fork**: did exploration push tray to 7?
+- **Stuck tiles at fork**: types with >= 3 visible that solver couldn't clear (often blocked by neighbors — unblock candidates)
+- **Bad explore taps**: explore taps that grew tray without progress
+
+Cross-run pattern analysis emits concrete heuristic tweaks. Iterate by:
+1. Run autoplay with current strategy
+2. Run replay_run on losses to identify the failure mode
+3. Tweak `src/solver/reactive.py` heuristics based on patterns
+4. Repeat
 
 ## Session orchestration
 
