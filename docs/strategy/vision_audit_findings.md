@@ -136,3 +136,52 @@ extraction-suspect ones.
 Strategy work (the tray-pair-completion bonus, MCTS, etc) is still
 the right next direction — but should be validated against the
 new richer state extraction, not the old gap-ridden one.
+
+## Second pass — post-fix validation
+
+After the queue-snap fix (`7a4fa02`), repeated the audit:
+
+### Detection
+- Match rate: 97.5% → **99.7%**
+- Queue matches: 320 → **366** (+46 = exactly the recovered centre-queue)
+- Main / tray match counts: unchanged (no regression)
+- Remaining 6 unmatched: all from screenshots where the agent
+  navigated outside the puzzle (game world map). Zero on actual
+  puzzle screens.
+
+### Strategy
+End-to-end test: ran fresh `extract_board.py` then `decide()` on
+all 25 start-of-run screenshots in the saved data. Distribution:
+
+- TRIPLET pick: **18 of 25** — planner immediately identifies a
+  triplet to clear from the start state.
+- GAME_OVER: 6 — these are the post-restart-leak cases where the
+  initial screen already had tray=7 (environmental issue, not
+  vision or strategy).
+- EXPLORE: 1 — `run_143611` with lookahead_value=+25.9; healthy
+  position with no immediate triplet but recoverable.
+
+Critically: the runs that previously surrendered as "unrecoverable"
+on first frame (155720, 155845, 162200 — the user's screenshot
+cases) all now identify the butterfly_orb triplet at step 0. The
+position was always winnable; vision was hiding it.
+
+### What the data tells us about the strategy code path
+
+When vision is correct, the planner does the right thing. The
+remaining loss-mode pattern is genuine: tray-pair-jam at high
+tray fill (the user's manual-loss screenshot showed this too —
+2 lanterns + 2 butterfly_orbs + 2 plumerias all stuck because
+the 7th tap was a singleton). The "tray-pair-completion bonus"
+sketched earlier targets exactly this and is a defensible next
+strategy refinement.
+
+### What needs to fail-safe
+
+- If `unmatched_positions.json` ever appears in a run's extraction
+  dirs, that's a new template gap. The auto-write makes it
+  obvious; templates can be extended without the diagnostics
+  having to be reverse-engineered every time.
+- The `intended_actual_match=False` events in the new verify log
+  are the canary for vision misclassifying tap targets. Should be
+  rare; if frequent, the matcher needs another sample broadening.
