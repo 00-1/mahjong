@@ -1,0 +1,2 @@
+{"event": "run_start", "ts": "2026-05-09T08:37:22.210Z", "run_id": "run_20260509_083722_l08", "level": 8, "started_at": "2026-05-09T08:37:22Z", "min_wait": 0.3, "max_wait": 3.0, "max_tap_retries": 2}
+{"event": "error", "ts": "2026-05-09T08:37:24.114Z", "msg": "initial snap or extract failed"}

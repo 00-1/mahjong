@@ -177,6 +177,15 @@
         "tiles/samples/tile_015_01.jpg"
       ],
       "first_seen": "data/screenshots/level_08/run_01_mid.jpg"
+    },
+    {
+      "tile_id": "tile_016",
+      "phash": "e1a18057921a2175006145572005d75f80145d7f985175ff215577df6557df7f",
+      "label": null,
+      "samples": [
+        "tiles/samples/tile_016_00.jpg"
+      ],
+      "first_seen": "/data/data/com.termux/files/home/autoplay_shots/test.png"
     }
   ]
 }

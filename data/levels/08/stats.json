@@ -1,0 +1,54 @@
+{
+  "level": 8,
+  "runs_total": 1,
+  "runs_won": 0,
+  "runs_lost": 0,
+  "runs_abandoned": 1,
+  "total_taps": 1,
+  "total_taps_won": 0,
+  "total_taps_lost": 0,
+  "common_loss_tray_tiles": {},
+  "per_anchor_observed_tiles": {
+    "(0,0)": {
+      "tile_010": 2
+    },
+    "(0,1)": {
+      "tile_010": 2
+    },
+    "(0,2)": {
+      "tile_001": 2
+    },
+    "(0,4)": {
+      "tile_002": 2
+    },
+    "(1,2)": {
+      "tile_001": 2
+    },
+    "(1,3)": {
+      "tile_007": 2
+    },
+    "(2,1)": {
+      "tile_013": 1
+    },
+    "(3,2)": {
+      "tile_008": 2
+    },
+    "(3,3)": {
+      "tile_012": 2
+    },
+    "(4,1)": {
+      "tile_003": 2
+    },
+    "(4,2)": {
+      "tile_013": 1
+    },
+    "(4,3)": {
+      "tile_007": 2
+    },
+    "(4,4)": {
+      "tile_012": 2
+    }
+  },
+  "win_rate": 0.0,
+  "avg_taps_per_run": 1.0
+}
