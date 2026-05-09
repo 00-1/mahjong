@@ -79,6 +79,10 @@ def main() -> int:
     p.add_argument("--verbose", action="store_true")
     p.add_argument("--inter-attempt-pause", type=float, default=8.0,
                    help="Seconds to wait between attempts (for navigation back)")
+    p.add_argument("--max-consecutive-losses", type=int, default=4,
+                   help="Halt after N consecutive losses on the SAME level. "
+                        "Strategy probably broken; don't burn all 10 challenge "
+                        "tickets. Default 4.")
     args = p.parse_args()
 
     session_started = time.time()
@@ -91,6 +95,7 @@ def main() -> int:
 
     for level in args.level:
         won_this_level = False
+        consecutive_losses = 0
         for attempt in range(1, args.max_attempts + 1):
             result = run_autoplay(level, args, attempt=attempt)
             print(json.dumps({"event": "attempt_end", **result,
@@ -100,11 +105,16 @@ def main() -> int:
                 won_this_level = True
                 break
             if result["status"] == "setup_error":
-                # adb dropped or environment broken — not transient, bail
                 print(json.dumps({"event": "session_abort", "reason": "setup_error",
                                   "level": level, "attempt": attempt}))
                 return 1
-            # lost / abandoned — pause and retry
+            if result["status"] in ("lost", "abandoned"):
+                consecutive_losses += 1
+                if consecutive_losses >= args.max_consecutive_losses:
+                    print(json.dumps({"event": "halt_on_consecutive_losses",
+                                      "level": level, "consecutive_losses": consecutive_losses,
+                                      "msg": "strategy probably broken; halting before burning more tickets"}))
+                    return 1
             if attempt < args.max_attempts:
                 print(json.dumps({"event": "pause_between_attempts",
                                   "seconds": args.inter_attempt_pause,

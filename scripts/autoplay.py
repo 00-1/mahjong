@@ -187,17 +187,18 @@ def main() -> int:
                     final_reason = "adb_disconnected"
                     break
 
-            # Compute decision from current state. Pass occult predictions
-            # through to the simulator if --use-lookahead AND we computed
-            # them in the previous --learn-occult step.
+            # Compute decision from current state. Build the combined
+            # occult+priors prediction map for lookahead simulation.
             occult_for_solver = None
-            if args.use_lookahead and last_occult_predictions:
-                # Convert OccultPrediction objects to {anchor_key: tile_id}
-                # — only high-confidence ones to avoid bad simulation.
-                occult_for_solver = {
-                    k: p.predicted_tile_id for k, p in last_occult_predictions.items()
-                    if p.confidence >= 0.5
-                }
+            if args.use_lookahead:
+                from src.solver.economy import merge_occult_and_priors
+                occult_for_solver = merge_occult_and_priors(
+                    last_occult_predictions if last_occult_predictions else None,
+                    levels_root, args.level,
+                    confidence_threshold=0.5, prior_min_obs=3,
+                )
+                if not occult_for_solver:
+                    occult_for_solver = None
             decide_t0 = time.time()
             decision = decide_fn(
                 ROOT / "data" / "extractions" / f"level_{args.level:02d}"

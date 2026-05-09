@@ -114,5 +114,22 @@ For Phase 5+ (need real data):
 
 ## Status checkpoint
 
-Working through Phase 2 next. Will commit each phase separately so
-review can happen incrementally.
+- ✅ Phase 1: simulate.py, lookahead.py, economy.py
+- ✅ Phase 2: --use-lookahead flag wired into autoplay + decide
+- ✅ Phase 3: scripts/compare_strategies.py validates against saved runs
+- ✅ Phase 4: restart.py auto-detects + scales coords for resolution mismatch
+- ✅ Phase 5: merge_occult_and_priors feeds combined predictions to lookahead
+- (deferred) Phase 6: anchor priors live (needs >=3 runs of accumulated data)
+- ✅ Phase 7: --max-consecutive-losses on session.py
+
+Validation against the saved fork-state of `run_20260509_112851_l08`:
+- Step 17 lookahead returns expected_value=-1000 (correctly anticipates
+  game-over within 3 moves)
+- Step 0-12 lookahead matches greedy on triplet completion (no regression)
+- Steps 13-17 (fork+) lookahead picks differently with quantified
+  expected values
+
+Next iterations require live run data:
+- Phase 6 fully active once anchor_priors.json has data from real runs
+- Tuning weights in state_value based on what compare_strategies surfaces
+- Eventually: train value function from accumulated outcomes

@@ -71,6 +71,29 @@ def looks_like_puzzle(device_arg: list[str], tmp_path: Path) -> bool:
     return len(detect_tile_faces(bgr, DetectConfig())) >= 6
 
 
+def detect_resolution(device_arg: list[str], tmp_path: Path) -> tuple[int, int] | None:
+    """Take a screenshot and read its dimensions."""
+    if not adb_screencap(device_arg, tmp_path):
+        return None
+    bgr = cv2.imread(str(tmp_path))
+    if bgr is None:
+        return None
+    return (bgr.shape[1], bgr.shape[0])
+
+
+def scale_coords(coords: dict, calibrated_resolution: tuple[int, int],
+                 actual_resolution: tuple[int, int]) -> dict:
+    """Scale (x, y) from the calibration resolution to the device's actual
+    resolution. Coords are stored verbatim; scaled at execution time."""
+    cal_w, cal_h = calibrated_resolution
+    act_w, act_h = actual_resolution
+    if (cal_w, cal_h) == (act_w, act_h):
+        return coords
+    sx = act_w / cal_w
+    sy = act_h / cal_h
+    return {"x": int(coords["x"] * sx), "y": int(coords["y"] * sy)}
+
+
 def main() -> int:
     p = argparse.ArgumentParser()
     p.add_argument("--device", default=None)
@@ -111,25 +134,53 @@ def main() -> int:
         print(json.dumps({
             "event": "missing_config",
             "msg": ("First-time setup: pass --discard-x/y and --challenge-again-x/y "
-                    "based on the buttons in your post-loss modal flow."),
+                    "based on the buttons in your post-loss modal flow. Optionally "
+                    "pass --calibrated-resolution WxH if you're not on the same "
+                    "device the coords were calibrated on."),
         }))
         return 2
 
+    # On first calibration, record the resolution so future runs on
+    # different-size phones can scale.
+    if "calibrated_resolution" not in cfg:
+        # Take an initial snapshot to record the calibration resolution
+        res = detect_resolution(device_arg, args.shot_dir / "restart_init.png")
+        if res:
+            cfg["calibrated_resolution"] = list(res)
+
     save_config(cfg)
-    print(json.dumps({"event": "restart_start", "config": cfg}))
+
+    # Scale coords for current device if it differs from the calibrated one
+    actual_res = detect_resolution(device_arg, args.shot_dir / "restart_init.png")
+    if actual_res and "calibrated_resolution" in cfg:
+        cal_res = tuple(cfg["calibrated_resolution"])
+        if cal_res != actual_res:
+            cfg_use = {
+                "discard": scale_coords(cfg["discard"], cal_res, actual_res),
+                "challenge_again": scale_coords(cfg["challenge_again"], cal_res, actual_res),
+            }
+            print(json.dumps({"event": "scaled_coords",
+                              "calibrated": cal_res, "actual": actual_res,
+                              "scaled_config": cfg_use}))
+        else:
+            cfg_use = cfg
+    else:
+        cfg_use = cfg
+
+    print(json.dumps({"event": "restart_start", "config": cfg_use}))
 
     # Step 1: wait for modal, tap Discard
     time.sleep(args.modal_wait)
-    print(json.dumps({"event": "tap_discard", "x": cfg["discard"]["x"], "y": cfg["discard"]["y"]}))
-    if not adb_tap(device_arg, cfg["discard"]["x"], cfg["discard"]["y"]):
+    print(json.dumps({"event": "tap_discard", "x": cfg_use["discard"]["x"], "y": cfg_use["discard"]["y"]}))
+    if not adb_tap(device_arg, cfg_use["discard"]["x"], cfg_use["discard"]["y"]):
         print(json.dumps({"event": "error", "msg": "discard tap failed"}))
         return 1
 
     # Step 2: wait for lose screen, tap Challenge Again
     time.sleep(args.lose_screen_wait)
     print(json.dumps({"event": "tap_challenge_again",
-                      "x": cfg["challenge_again"]["x"], "y": cfg["challenge_again"]["y"]}))
-    if not adb_tap(device_arg, cfg["challenge_again"]["x"], cfg["challenge_again"]["y"]):
+                      "x": cfg_use["challenge_again"]["x"], "y": cfg_use["challenge_again"]["y"]}))
+    if not adb_tap(device_arg, cfg_use["challenge_again"]["x"], cfg_use["challenge_again"]["y"]):
         print(json.dumps({"event": "error", "msg": "challenge_again tap failed"}))
         return 1
 

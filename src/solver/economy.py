@@ -163,6 +163,47 @@ def predict_anchor_from_priors(
     return best, dist[best]
 
 
+def merge_occult_and_priors(
+    occult_predictions: dict | None,
+    levels_root: Path,
+    level: int,
+    confidence_threshold: float = 0.5,
+    prior_min_obs: int = 3,
+) -> dict:
+    """Build a unified anchor->tile_id prediction map combining live
+    occult predictions (high-confidence only) with accumulated priors
+    (when no occult prediction exists for that anchor)."""
+    out: dict = {}
+    if occult_predictions:
+        for k, p in occult_predictions.items():
+            tid = getattr(p, "predicted_tile_id", None)
+            conf = getattr(p, "confidence", 0)
+            if tid is None and isinstance(p, dict):
+                tid = p.get("predicted_tile_id")
+                conf = p.get("confidence", 0)
+            if tid and conf >= confidence_threshold:
+                out[k] = tid
+    # Fill in from priors for any anchor we don't already have
+    priors = load_anchor_priors(levels_root, level)
+    for anchor_key, anchor_data in priors.get("anchors", {}).items():
+        # Parse "(r,c)" -> tuple
+        try:
+            r, c = [int(x) for x in anchor_key.strip("()").split(",")]
+        except Exception:
+            continue
+        key = ("main_board", r, c)
+        if key in out:
+            continue
+        # Use depth-1 prior (best guess for unrevealed top)
+        d1 = anchor_data.get("d1", {})
+        if d1.get("total", 0) >= prior_min_obs:
+            counts = d1.get("tiles", {})
+            if counts:
+                best = max(counts, key=counts.get)
+                out[key] = best
+    return out
+
+
 def summary_string(economies: dict[str, TileEconomy], label_fn=None) -> str:
     """Human-readable rendering for logging."""
     if label_fn is None:
