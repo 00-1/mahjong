@@ -16,7 +16,8 @@
         142
       ],
       "tile_id": "tile_001",
-      "stack_depth": 1
+      "stack_depth": 1,
+      "tile_id_distance": 4
     },
     {
       "row": 0,
@@ -28,7 +29,8 @@
         142
       ],
       "tile_id": "tile_004",
-      "stack_depth": 1
+      "stack_depth": 1,
+      "tile_id_distance": 8
     },
     {
       "row": 0,
@@ -40,7 +42,8 @@
         142
       ],
       "tile_id": "tile_007",
-      "stack_depth": 1
+      "stack_depth": 1,
+      "tile_id_distance": 10
     },
     {
       "row": 0,
@@ -52,7 +55,8 @@
         142
       ],
       "tile_id": "tile_013",
-      "stack_depth": 1
+      "stack_depth": 1,
+      "tile_id_distance": 12
     },
     {
       "row": 0,
@@ -64,7 +68,8 @@
         142
       ],
       "tile_id": "tile_013",
-      "stack_depth": 1
+      "stack_depth": 1,
+      "tile_id_distance": 22
     },
     {
       "row": 0,
@@ -76,7 +81,8 @@
         142
       ],
       "tile_id": "tile_008",
-      "stack_depth": 1
+      "stack_depth": 1,
+      "tile_id_distance": 4
     },
     {
       "row": 1,
@@ -88,7 +94,8 @@
         143
       ],
       "tile_id": "tile_007",
-      "stack_depth": 1
+      "stack_depth": 1,
+      "tile_id_distance": 22
     },
     {
       "row": 1,
@@ -100,7 +107,8 @@
         143
       ],
       "tile_id": "tile_010",
-      "stack_depth": 1
+      "stack_depth": 1,
+      "tile_id_distance": 26
     },
     {
       "row": 2,
@@ -112,7 +120,8 @@
         143
       ],
       "tile_id": "tile_003",
-      "stack_depth": 1
+      "stack_depth": 1,
+      "tile_id_distance": 16
     },
     {
       "row": 2,
@@ -124,7 +133,8 @@
         143
       ],
       "tile_id": "tile_011",
-      "stack_depth": 1
+      "stack_depth": 1,
+      "tile_id_distance": 14
     },
     {
       "row": 3,
@@ -136,7 +146,8 @@
         143
       ],
       "tile_id": "tile_005",
-      "stack_depth": 1
+      "stack_depth": 1,
+      "tile_id_distance": 8
     },
     {
       "row": 3,
@@ -148,7 +159,8 @@
         143
       ],
       "tile_id": "tile_013",
-      "stack_depth": 1
+      "stack_depth": 1,
+      "tile_id_distance": 18
     },
     {
       "row": 4,
@@ -160,7 +172,8 @@
         142
       ],
       "tile_id": "tile_012",
-      "stack_depth": 1
+      "stack_depth": 1,
+      "tile_id_distance": 16
     },
     {
       "row": 4,
@@ -172,7 +185,8 @@
         142
       ],
       "tile_id": "tile_012",
-      "stack_depth": 1
+      "stack_depth": 1,
+      "tile_id_distance": 14
     },
     {
       "row": 4,
@@ -184,7 +198,8 @@
         142
       ],
       "tile_id": "tile_004",
-      "stack_depth": 1
+      "stack_depth": 1,
+      "tile_id_distance": 12
     },
     {
       "row": 4,
@@ -196,7 +211,8 @@
         142
       ],
       "tile_id": "tile_008",
-      "stack_depth": 1
+      "stack_depth": 1,
+      "tile_id_distance": 8
     },
     {
       "row": 4,
@@ -208,7 +224,8 @@
         142
       ],
       "tile_id": "tile_011",
-      "stack_depth": 1
+      "stack_depth": 1,
+      "tile_id_distance": 14
     },
     {
       "row": 4,
@@ -220,7 +237,8 @@
         142
       ],
       "tile_id": "tile_008",
-      "stack_depth": 1
+      "stack_depth": 1,
+      "tile_id_distance": 6
     }
   ],
   "queues": [
@@ -233,7 +251,8 @@
         143
       ],
       "tile_id": "tile_002",
-      "queue_remaining": null
+      "queue_remaining": null,
+      "tile_id_distance": 8
     },
     {
       "queue_id": "right_lower",
@@ -244,7 +263,8 @@
         143
       ],
       "tile_id": "tile_008",
-      "queue_remaining": null
+      "queue_remaining": null,
+      "tile_id_distance": 14
     },
     {
       "queue_id": "right_upper",
@@ -255,7 +275,8 @@
         143
       ],
       "tile_id": "tile_009",
-      "queue_remaining": null
+      "queue_remaining": null,
+      "tile_id_distance": 42
     }
   ],
   "tray": [],

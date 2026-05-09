@@ -24,6 +24,7 @@ class MainCell:
     bbox: tuple[int, int, int, int]  # x, y, w, h
     tile_id: str | None = None
     stack_depth: int | None = None  # number of tiles below this one (None = unknown)
+    tile_id_distance: int | None = None  # pHash distance to library entry (lower = more confident match)
 
 
 @dataclass
@@ -32,6 +33,7 @@ class QueueCell:
     bbox: tuple[int, int, int, int]
     tile_id: str | None = None
     queue_remaining: int | None = None  # estimated tiles still queued (incl. visible head)
+    tile_id_distance: int | None = None
 
 
 @dataclass
@@ -39,6 +41,7 @@ class TraySlot:
     slot: int  # 0..6
     bbox: tuple[int, int, int, int]
     tile_id: str | None = None
+    tile_id_distance: int | None = None
 
 
 @dataclass

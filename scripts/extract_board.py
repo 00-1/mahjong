@@ -102,7 +102,8 @@ def main(image_path: Path, level: int, out_dir: Path | None, tiles_dir: Path, re
     for r in snap_results:
         d = detections[r.detection_idx]
         crop = crop_face_center(bgr, d.x, d.y, d.w, d.h)
-        entry, _, _ = library.lookup_or_add(crop, source=image_rel)
+        entry, distance, _ = library.lookup_or_add(crop, source=image_rel)
+        distance = int(distance)  # imagehash returns numpy int — coerce for JSON
 
         if r.anchor.zone == "main_board":
             depth = 1 if (r.offset_x, r.offset_y) == (0, 0) else 2
@@ -112,18 +113,21 @@ def main(image_path: Path, level: int, out_dir: Path | None, tiles_dir: Path, re
                 bbox=(d.x, d.y, d.w, d.h),
                 tile_id=entry.tile_id,
                 stack_depth=depth,
+                tile_id_distance=distance,
             ))
         elif r.anchor.zone == "queue":
             queue_cells.append(QueueCell(
                 queue_id=r.anchor.queue_id,
                 bbox=(d.x, d.y, d.w, d.h),
                 tile_id=entry.tile_id,
+                tile_id_distance=distance,
             ))
         elif r.anchor.zone == "tray":
             tray_slots.append(TraySlot(
                 slot=r.anchor.col,
                 bbox=(d.x, d.y, d.w, d.h),
                 tile_id=entry.tile_id,
+                tile_id_distance=distance,
             ))
 
     main_cells.sort(key=lambda c: (c.row, c.col))

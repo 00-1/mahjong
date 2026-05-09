@@ -85,7 +85,8 @@ class TileLibrary:
         threshold: int = DEFAULT_HAMMING_THRESHOLD,
     ) -> tuple[TileEntry, int, bool]:
         """Return (entry, hamming_distance, was_added).
-        was_added=True means we registered a new tile."""
+        was_added=True means we registered a new tile.
+        hamming_distance is 0 for new entries."""
         h = phash_of(bgr_crop)
         best: tuple[TileEntry, int] | None = None
         for e in self.entries:

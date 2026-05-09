@@ -143,12 +143,14 @@ def main() -> int:
                     break
 
             # Compute decision from current state
+            decide_t0 = time.time()
             decision = decide_fn(
                 ROOT / "data" / "extractions" / f"level_{args.level:02d}"
                 / shot_path.stem / "state.json",
                 image_size or (1220, 2712),
                 label_fn=label_fn,
             )
+            decide_ms = int((time.time() - decide_t0) * 1000)
             record_step(
                 runs_dir, run_id, step, shot_path, state_dict, decision,
                 keep_screenshot=args.keep_screenshots,
@@ -158,13 +160,14 @@ def main() -> int:
             last_state = state_dict
             reason = decision.get("reason_code", "")
 
-            if args.verbose:
-                log.emit(
-                    "decision", step=step, reason=reason,
-                    tap=decision.get("tap"),
-                    tray=decision.get("state", {}).get("tray_filled"),
-                    score=decision.get("score"),
-                )
+            log.emit(
+                "decision", step=step, reason=reason,
+                tap=decision.get("tap") if args.verbose else None,
+                tray=decision.get("state", {}).get("tray_filled"),
+                score=decision.get("score"),
+                decide_ms=decide_ms,
+                num_alternatives=len(decision.get("alternatives", [])),
+            )
 
             # Terminal states
             if decision.get("should_stop"):
@@ -290,17 +293,21 @@ def main() -> int:
                     tile=decision.get("label"), reason=reason,
                     score=decision.get("score"), attempt=tap_attempts + 1,
                 )
+                tap_t0 = time.time()
                 if not adb_tap(device_arg, tap_x, tap_y):
                     log.emit("error", step=step, msg="tap failed")
                     final_status = "abandoned"
                     final_reason = "tap_command_failed"
                     break
+                tap_ms = int((time.time() - tap_t0) * 1000)
 
                 # Adaptive wait — poll until state changes or we time out
+                wait_t0 = time.time()
                 after_state, after_size, elapsed = adaptive_wait_for_change(
                     device_arg, args.shot_dir, args.level, before_sig,
                     min_wait=args.min_wait, max_wait=args.max_wait,
                 )
+                wait_ms = int((time.time() - wait_t0) * 1000)
                 if after_state is None:
                     log.emit("error", step=step, msg="snap failed during wait")
                     final_status = "abandoned"
@@ -314,7 +321,9 @@ def main() -> int:
                 )
                 log.emit("verify", step=step,
                          success=v.success, reason=v.reason, notes=v.notes,
-                         attempt=tap_attempts + 1, elapsed_sec=round(elapsed, 2))
+                         attempt=tap_attempts + 1,
+                         tap_ms=tap_ms, wait_ms=wait_ms,
+                         elapsed_sec=round(elapsed, 2))
                 if v.success:
                     tap_success = True
                     consecutive_missed_taps = 0
