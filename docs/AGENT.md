@@ -70,16 +70,83 @@ If verification fails, autoplay retries with a small pixel offset (±8 in
 each direction) before giving up. After 3 consecutive missed taps the
 run is abandoned (probably an unrecoverable scroll / popup state).
 
+### Adaptive wait
+
+After each tap, autoplay polls for state change instead of using a fixed
+sleep:
+- After `--min-wait` (default 0.3s), snap+extract.
+- If the state hasn't changed yet, sleep 0.25s and retry.
+- Up to `--max-wait` (default 3.0s) total polling.
+
+So fast animations complete in ~0.5s rather than the old fixed 1.5s. Slow
+animations still get up to 3s.
+
+For triplet bursts, an extra `--triplet-extra-wait` (default 1.0s) is
+added on top — the auto-clear takes longer than a single tap.
+
+### Reused snap
+
+The verification snap is reused as the next iteration's decision input,
+saving one full `screencap + extract` per step (~700ms-1s on a typical
+phone).
+
+### Master log
+
+Each run gets `data/runs/<run_id>/log.jsonl` — single jsonl file, one
+event per line. Tail it live or grep after the fact:
+
+```
+tail -f data/runs/run_*_l08/log.jsonl
+grep '"event":"verify"' data/runs/run_*_l08/log.jsonl | jq -c .
+```
+
+### Health check
+
+Every `--health-check-interval` steps (default 20), autoplay verifies
+the ADB device is still reachable. If not, abandons cleanly with
+status=abandoned, reason=adb_disconnected.
+
+### Loop detection
+
+If the visible state hasn't changed for 5 consecutive steps (despite
+"successful" taps according to verify), autoplay abandons with
+reason=stuck_loop. Catches edge cases where the game enters an
+unexpected state we keep mis-recovering from.
+
 ### LLM agent's role
 
-The LLM agent only handles:
-1. Environment setup (adb, Termux deps, keepalive)
-2. Navigation from home → gameplay screen (per `docs/navigation/`)
-3. Launching `autoplay.py`
-4. Between levels: handling level-complete popups, level-list scrolling,
-   choosing the next level to attempt
+With autoplay + session.py, the LLM agent only handles:
+1. Environment setup (adb, Termux deps, keepalive) — once per session
+2. Navigation from home → gameplay screen — once per level (or per
+   re-attempt, if a level was lost)
+3. Launching `session.py` (which calls `autoplay.py` per attempt)
+4. Between attempts/levels: handle popups, navigate to next level via
+   level list
 
-For the play loop itself, no LLM context cycles per move.
+For the play loop itself, zero LLM context cycles per move.
+
+## Session orchestration
+
+For an unattended run of multiple levels with retries on loss:
+
+```
+python scripts/session.py \
+    --level 8 --level 9 --level 10 \
+    --max-attempts 3 \
+    --inter-attempt-pause 8.0
+```
+
+Calls `autoplay.py` per attempt. Records every attempt's outcome,
+pauses between attempts to give the agent time to navigate back to the
+gameplay screen, and returns once all levels are processed.
+
+Exit code: 0 if all listed levels were won at least once, 1 otherwise.
+Per-level stats (`data/levels/NN/stats.json`) accumulate as expected.
+
+The `--inter-attempt-pause` is a hard sleep — the LLM agent should use
+that window to dismiss popups and navigate to the next gameplay screen.
+If it can't, the next attempt's autoplay will return `setup_error`
+(extraction fails on a non-puzzle screen) and the session moves on.
 
 ## Loop overview (lower-level, when autoplay isn't usable)
 

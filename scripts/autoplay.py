@@ -1,23 +1,11 @@
 #!/usr/bin/env python3
 """Self-driving play loop: screenshot, decide, tap, sleep — no LLM in the loop.
 
-Runs an entire level autonomously. Calls the local solver for each move,
-talks to ADB directly for screencaps and taps. Logs every step under
+Plays a single level autonomously. Logs every step under
 `data/runs/<run_id>/`. Exits when the level is won, lost, or stuck.
 
 Usage:
     python scripts/autoplay.py --level 8 [options]
-
-Options:
-    --device SERIAL       adb device serial (omit if only one device connected)
-    --max-steps N         abort after N steps (default 200)
-    --tap-settle SEC      sleep after each tap (default 1.5)
-    --triplet-settle SEC  sleep after triplet-completing taps (default 2.5)
-    --shot-dir PATH       where to put transient screencap PNGs (default /tmp)
-    --keep-screenshots    save each screenshot in the run dir (default off)
-    --run-id ID           use a specific run id (default auto)
-    --no-stats            don't integrate into per-level stats (e.g. for testing)
-    --verbose             extra logging
 
 Exit codes:
     0  won
@@ -30,7 +18,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import subprocess
 import sys
 import time
 from datetime import datetime
@@ -39,74 +26,43 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-import cv2  # noqa: E402
-
+from src.agent.autoplay_lib import (
+    adaptive_wait_for_change,
+    adb_check_device,
+    adb_tap,
+    heuristic_outcome,
+    snap_and_extract,
+    state_signature,
+)
 from src.agent.decide import decide as decide_fn
-from src.agent.run import end_run, next_step_number, record_step, save_meta, start_run
+from src.agent.run import end_run, record_step, save_meta, start_run
 from src.agent.stats import integrate_run
 from src.agent.verify import verify_tap, verify_triplet_burst
 
 
-ADB_TIMEOUT = 15
 TRIPLET_REASONS = {"TRIPLET", "PROBABLE"}
+TAP_RETRY_OFFSETS = [(0, 0), (0, -8), (0, 8), (-8, 0), (8, 0), (-8, -8), (8, 8)]
 
 
-def _adb(device_arg: list[str], *args: str, capture: bool = True, timeout: int = ADB_TIMEOUT) -> subprocess.CompletedProcess:
-    cmd = ["adb"] + device_arg + list(args)
-    return subprocess.run(cmd, capture_output=capture, timeout=timeout)
+class MasterLog:
+    """Append-only jsonl log per run. Open once, write line per event."""
 
+    def __init__(self, path: Path):
+        path.parent.mkdir(parents=True, exist_ok=True)
+        self.fh = path.open("a")
 
-def adb_screencap(device_arg: list[str], output_path: Path) -> bool:
-    try:
-        r = _adb(device_arg, "exec-out", "screencap", "-p")
-        if r.returncode != 0:
-            return False
-        output_path.write_bytes(r.stdout)
-        return output_path.stat().st_size > 1000
-    except subprocess.TimeoutExpired:
-        return False
+    def emit(self, event: str, **fields) -> None:
+        rec = {"event": event, "ts": datetime.utcnow().isoformat(timespec="milliseconds") + "Z", **fields}
+        self.fh.write(json.dumps(rec) + "\n")
+        self.fh.flush()
+        # Also stdout for live monitoring
+        print(json.dumps(rec))
 
-
-def adb_tap(device_arg: list[str], x: int, y: int) -> bool:
-    try:
-        r = _adb(device_arg, "shell", "input", "tap", str(x), str(y))
-        return r.returncode == 0
-    except subprocess.TimeoutExpired:
-        return False
-
-
-def _snap_and_extract(device_arg: list[str], args, step_id) -> dict | None:
-    """Helper: take a screenshot, run extract_board, return state dict.
-    Used for verification snaps that don't go through the full step logging."""
-    shot_path = args.shot_dir / f"verify_{step_id}.png"
-    if not adb_screencap(device_arg, shot_path):
-        return None
-    extract = subprocess.run(
-        [sys.executable, str(ROOT / "scripts" / "extract_board.py"),
-         str(shot_path), "--level", str(args.level)],
-        capture_output=True, text=True,
-    )
-    if extract.returncode != 0:
-        return None
-    state_path = (
-        ROOT / "data" / "extractions" / f"level_{args.level:02d}"
-        / shot_path.stem / "state.json"
-    )
-    if not state_path.exists():
-        return None
-    with open(state_path) as f:
-        return json.load(f)
-
-
-def adb_check_device(device_arg: list[str]) -> str | None:
-    """Return device state from `adb get-state`, or None if not reachable."""
-    try:
-        r = _adb(device_arg, "get-state", timeout=5)
-        if r.returncode != 0:
-            return None
-        return r.stdout.decode().strip()
-    except Exception:
-        return None
+    def close(self) -> None:
+        try:
+            self.fh.close()
+        except Exception:
+            pass
 
 
 def load_labels(tiles_dir: Path) -> dict:
@@ -124,25 +80,27 @@ def main() -> int:
     p.add_argument("--level", type=int, required=True)
     p.add_argument("--device", default=None)
     p.add_argument("--max-steps", type=int, default=200)
-    p.add_argument("--tap-settle", type=float, default=1.5)
-    p.add_argument("--triplet-settle", type=float, default=2.5)
+    p.add_argument("--min-wait", type=float, default=0.3,
+                   help="Minimum delay after a tap before checking for change")
+    p.add_argument("--max-wait", type=float, default=3.0,
+                   help="Maximum delay polling for state change after a tap")
+    p.add_argument("--triplet-extra-wait", type=float, default=1.0,
+                   help="Additional wait after triplet bursts for clear animation")
     p.add_argument("--shot-dir", type=Path, default=Path("/tmp"))
     p.add_argument("--keep-screenshots", action="store_true")
     p.add_argument("--run-id", default=None)
     p.add_argument("--no-stats", action="store_true")
     p.add_argument("--verbose", action="store_true")
     p.add_argument("--tiles-dir", type=Path, default=ROOT / "data" / "tiles")
-    p.add_argument("--no-verify", action="store_true",
-                   help="Skip post-tap verification (faster, but won't detect missed taps)")
-    p.add_argument("--max-tap-retries", type=int, default=2,
-                   help="On a missed tap, retry this many times with small offset before giving up")
+    p.add_argument("--max-tap-retries", type=int, default=2)
+    p.add_argument("--health-check-interval", type=int, default=20,
+                   help="Verify ADB device is reachable every N steps")
     args = p.parse_args()
 
     device_arg = ["-s", args.device] if args.device else []
 
-    state = adb_check_device(device_arg)
-    if state != "device":
-        print(f"[autoplay] adb device unreachable (state={state!r}). Connect first.", file=sys.stderr)
+    if adb_check_device(device_arg) != "device":
+        print(f"[autoplay] adb device unreachable. Connect first.", file=sys.stderr)
         return 3
 
     args.shot_dir.mkdir(parents=True, exist_ok=True)
@@ -152,110 +110,104 @@ def main() -> int:
     runs_dir = ROOT / "data" / "runs"
     meta = start_run(runs_dir, args.level, args.run_id)
     run_id = meta.run_id
-    print(json.dumps({"event": "run_start", "run_id": run_id, "level": args.level,
-                      "started_at": meta.started_at}))
+    log = MasterLog(runs_dir / run_id / "log.jsonl")
+    log.emit("run_start", run_id=run_id, level=args.level, started_at=meta.started_at,
+             min_wait=args.min_wait, max_wait=args.max_wait, max_tap_retries=args.max_tap_retries)
 
     step = 0
     final_status = "abandoned"
+    final_reason = ""
     consecutive_not_a_puzzle = 0
     consecutive_missed_taps = 0
-    last_decision = None
+    consecutive_unchanged = 0  # state didn't change after tap (potentially-stuck)
     last_state = None
+    run_started = time.time()
+
+    # Initial snapshot
+    shot_path = args.shot_dir / f"autoplay_{run_id}_init.png"
+    state_dict, image_size = snap_and_extract(device_arg, shot_path, args.level)
+    if state_dict is None:
+        log.emit("error", msg="initial snap or extract failed")
+        end_run(runs_dir, run_id, "abandoned", "initial snap failed")
+        log.close()
+        return 3
 
     try:
         while step < args.max_steps:
-            shot_path = args.shot_dir / f"autoplay_{run_id}_{step:03d}.png"
+            # Health check periodically
+            if step > 0 and step % args.health_check_interval == 0:
+                if adb_check_device(device_arg) != "device":
+                    log.emit("error", step=step, msg="adb disconnected at health check")
+                    final_status = "abandoned"
+                    final_reason = "adb_disconnected"
+                    break
 
-            if not adb_screencap(device_arg, shot_path):
-                print(json.dumps({"event": "error", "step": step, "msg": "screencap failed"}))
-                final_status = "abandoned"
-                break
-
-            extract = subprocess.run(
-                [sys.executable, str(ROOT / "scripts" / "extract_board.py"),
-                 str(shot_path), "--level", str(args.level)],
-                capture_output=True, text=True,
-            )
-            if extract.returncode != 0:
-                print(json.dumps({"event": "error", "step": step,
-                                  "msg": "extract failed", "stderr": extract.stderr.strip()}))
-                final_status = "abandoned"
-                break
-
-            state_path = (
+            # Compute decision from current state
+            decision = decide_fn(
                 ROOT / "data" / "extractions" / f"level_{args.level:02d}"
-                / shot_path.stem / "state.json"
+                / shot_path.stem / "state.json",
+                image_size or (1220, 2712),
+                label_fn=label_fn,
             )
-            if not state_path.exists():
-                print(json.dumps({"event": "error", "step": step,
-                                  "msg": "state.json missing"}))
-                final_status = "abandoned"
-                break
-
-            img = cv2.imread(str(shot_path))
-            if img is None:
-                final_status = "abandoned"
-                break
-            image_size = (img.shape[1], img.shape[0])
-
-            decision = decide_fn(state_path, image_size, label_fn=label_fn)
-
-            with open(state_path) as f:
-                state_dict = json.load(f)
             record_step(
                 runs_dir, run_id, step, shot_path, state_dict, decision,
                 keep_screenshot=args.keep_screenshots,
             )
             meta.last_step = step
             save_meta(runs_dir, meta)
-            last_decision = decision
-
+            last_state = state_dict
             reason = decision.get("reason_code", "")
-            if args.verbose:
-                summary = {
-                    "step": step, "reason": reason,
-                    "tray": decision.get("state", {}).get("tray_filled"),
-                    "tap": decision.get("tap"),
-                }
-                print(json.dumps({"event": "decision", **summary}))
 
+            if args.verbose:
+                log.emit(
+                    "decision", step=step, reason=reason,
+                    tap=decision.get("tap"),
+                    tray=decision.get("state", {}).get("tray_filled"),
+                    score=decision.get("score"),
+                )
+
+            # Terminal states
             if decision.get("should_stop"):
                 if reason == "GAME_OVER":
                     final_status = "lost"
-                    print(json.dumps({"event": "game_over", "step": step}))
+                    final_reason = "game_over"
+                    log.emit("game_over", step=step)
                     break
                 if reason == "NOT_A_PUZZLE":
                     consecutive_not_a_puzzle += 1
-                    print(json.dumps({"event": "not_a_puzzle", "step": step,
-                                      "consecutive": consecutive_not_a_puzzle}))
+                    log.emit("not_a_puzzle", step=step, consecutive=consecutive_not_a_puzzle)
                     if consecutive_not_a_puzzle >= 5:
-                        # After 5 NOT_A_PUZZLE in a row we're stuck — probably
-                        # the level finished or popped up something we can't
-                        # dismiss. Hand control back.
-                        final_status = "abandoned"
+                        final_status = heuristic_outcome(last_state)
+                        final_reason = "5x_not_a_puzzle"
+                        log.emit("stop_by_heuristic", step=step,
+                                 outcome=final_status, last_state_size=len(last_state.get("main_board", []) if last_state else []))
                         break
                     time.sleep(2.0)
+                    # Re-snap and try again
+                    shot_path = args.shot_dir / f"autoplay_{run_id}_{step:03d}_retry.png"
+                    state_dict, image_size = snap_and_extract(device_arg, shot_path, args.level)
+                    if state_dict is None:
+                        final_status = "abandoned"
+                        final_reason = "snap_failed_after_npz"
+                        break
                     step += 1
                     continue
-                # NO_MOVES, EXTRACTION_FAILED, etc.
                 final_status = "abandoned"
-                print(json.dumps({"event": "stop", "step": step, "reason": reason,
-                                  "msg": decision.get("reason")}))
+                final_reason = reason or "unknown"
+                log.emit("stop", step=step, reason=reason, msg=decision.get("reason"))
                 break
 
             consecutive_not_a_puzzle = 0
 
-            # Speed-up: if a full triplet sequence is available, blast all
-            # taps in sequence without re-snapping. ~3x faster than one
-            # decide cycle per tap.
+            # Triplet burst path
             triplet_seq = decision.get("triplet_sequence")
             if triplet_seq and len(triplet_seq) >= 2:
-                print(json.dumps({
-                    "event": "triplet_burst", "step": step,
-                    "tile": decision.get("label"),
-                    "taps": len(triplet_seq),
-                    "locations": [t["location"] for t in triplet_seq],
-                }))
+                log.emit(
+                    "triplet_burst", step=step,
+                    tile=decision.get("label"),
+                    taps=len(triplet_seq),
+                    locations=[t["location"] for t in triplet_seq],
+                )
                 burst_ok = True
                 for t in triplet_seq:
                     if not adb_tap(device_arg, t["x"], t["y"]):
@@ -263,104 +215,168 @@ def main() -> int:
                         break
                     time.sleep(0.4)
                 if not burst_ok:
-                    print(json.dumps({"event": "error", "step": step, "msg": "burst tap failed"}))
+                    log.emit("error", step=step, msg="burst tap failed")
                     final_status = "abandoned"
+                    final_reason = "burst_tap_failed"
                     break
-                time.sleep(args.triplet_settle)
-                # Verify the burst actually cleared the triplet
-                if not args.no_verify:
-                    after_state = _snap_and_extract(device_arg, args, step + 0.5)
-                    if after_state is not None:
-                        v = verify_triplet_burst(
-                            state_dict, after_state,
-                            [t["location"] for t in triplet_seq],
-                            decision["tile_id"],
-                        )
-                        print(json.dumps({"event": "verify_burst", "step": step,
-                                          "success": v.success, "reason": v.reason,
-                                          "notes": v.notes}))
-                        if not v.success:
-                            consecutive_missed_taps += 1
-                        else:
-                            consecutive_missed_taps = 0
+
+                # Wait for the auto-clear animation, then re-snap
+                before_sig = state_signature(state_dict)
+                state_dict, image_size, elapsed = adaptive_wait_for_change(
+                    device_arg, args.shot_dir, args.level, before_sig,
+                    min_wait=args.min_wait + args.triplet_extra_wait,
+                    max_wait=args.max_wait + args.triplet_extra_wait,
+                )
+                if state_dict is None:
+                    log.emit("error", step=step, msg="snap failed after triplet burst")
+                    final_status = "abandoned"
+                    final_reason = "snap_failed_post_burst"
+                    break
+                # Find the freshly-saved shot path for record_step's screenshot file
+                # (the adaptive_wait helper creates timestamped files; we just track
+                # the stem of whichever it returned)
+                shot_path = _latest_shot(args.shot_dir, "autoplay_wait_")
+
+                # Verify
+                v = verify_triplet_burst(
+                    decision["state"] if isinstance(decision.get("state"), dict) else {},
+                    state_dict,
+                    [t["location"] for t in triplet_seq],
+                    decision["tile_id"],
+                )
+                # Note: decide()'s state summary doesn't have full main_board.
+                # Use the recorded state_dict from the previous step as 'before'.
+                # (The recorded step file is the actual before.)
+                before_path = (
+                    runs_dir / run_id / f"t{step:03d}.state.json"
+                )
+                if before_path.exists():
+                    with open(before_path) as f:
+                        before_full = json.load(f)
+                    v = verify_triplet_burst(
+                        before_full, state_dict,
+                        [t["location"] for t in triplet_seq],
+                        decision["tile_id"],
+                    )
+                log.emit("verify_burst", step=step,
+                         success=v.success, reason=v.reason, notes=v.notes,
+                         elapsed_sec=round(elapsed, 2))
+                if v.success:
+                    consecutive_missed_taps = 0
+                    consecutive_unchanged = 0
+                else:
+                    consecutive_missed_taps += 1
                 step += 1
-                last_state = state_dict
                 continue
 
+            # Single-tap path (with retry on miss)
             tap = decision.get("tap")
             if not tap:
                 final_status = "abandoned"
+                final_reason = "no_tap_in_decision"
                 break
 
             x, y = tap["x"], tap["y"]
             tap_attempts = 0
             tap_success = False
-            current_x, current_y = x, y
-            tap_retry_offsets = [(0, 0), (0, -8), (0, 8), (-8, 0), (8, 0)]
+            before_sig = state_signature(state_dict)
 
             while tap_attempts <= args.max_tap_retries:
-                tap_x = x + tap_retry_offsets[tap_attempts][0]
-                tap_y = y + tap_retry_offsets[tap_attempts][1]
-                print(json.dumps({
-                    "event": "tap", "step": step,
-                    "x": tap_x, "y": tap_y, "loc": tap.get("location"),
-                    "tile": decision.get("label"), "reason": reason,
-                    "score": decision.get("score"),
-                    "attempt": tap_attempts + 1,
-                }))
+                offset = TAP_RETRY_OFFSETS[min(tap_attempts, len(TAP_RETRY_OFFSETS) - 1)]
+                tap_x, tap_y = x + offset[0], y + offset[1]
+                log.emit(
+                    "tap", step=step,
+                    x=tap_x, y=tap_y, loc=tap.get("location"),
+                    tile=decision.get("label"), reason=reason,
+                    score=decision.get("score"), attempt=tap_attempts + 1,
+                )
                 if not adb_tap(device_arg, tap_x, tap_y):
-                    print(json.dumps({"event": "error", "step": step, "msg": "tap failed"}))
+                    log.emit("error", step=step, msg="tap failed")
                     final_status = "abandoned"
+                    final_reason = "tap_command_failed"
                     break
 
-                settle = args.triplet_settle if reason in TRIPLET_REASONS else args.tap_settle
-                time.sleep(settle)
-
-                if args.no_verify:
-                    tap_success = True
+                # Adaptive wait — poll until state changes or we time out
+                after_state, after_size, elapsed = adaptive_wait_for_change(
+                    device_arg, args.shot_dir, args.level, before_sig,
+                    min_wait=args.min_wait, max_wait=args.max_wait,
+                )
+                if after_state is None:
+                    log.emit("error", step=step, msg="snap failed during wait")
+                    final_status = "abandoned"
+                    final_reason = "snap_failed_during_wait"
                     break
 
                 # Verify
-                after_state = _snap_and_extract(device_arg, args, step + 0.5)
-                if after_state is None:
-                    tap_success = True
-                    break
-                v = verify_tap(state_dict, after_state,
-                               tap.get("location", ""), decision.get("tile_id", ""))
-                print(json.dumps({"event": "verify", "step": step,
-                                  "success": v.success, "reason": v.reason,
-                                  "notes": v.notes, "attempt": tap_attempts + 1}))
+                v = verify_tap(
+                    state_dict, after_state,
+                    tap.get("location", ""), decision.get("tile_id", ""),
+                )
+                log.emit("verify", step=step,
+                         success=v.success, reason=v.reason, notes=v.notes,
+                         attempt=tap_attempts + 1, elapsed_sec=round(elapsed, 2))
                 if v.success:
                     tap_success = True
                     consecutive_missed_taps = 0
+                    consecutive_unchanged = 0
+                    state_dict = after_state
+                    image_size = after_size
+                    shot_path = _latest_shot(args.shot_dir, "autoplay_wait_")
                     break
                 # Tap missed — retry with offset
                 tap_attempts += 1
 
-            if not tap_success and final_status != "abandoned":
-                consecutive_missed_taps += 1
-                print(json.dumps({"event": "tap_miss_unrecoverable", "step": step,
-                                  "consecutive_misses": consecutive_missed_taps}))
-                if consecutive_missed_taps >= 3:
-                    print(json.dumps({"event": "stop", "msg": "3 consecutive missed taps — abandoning"}))
-                    final_status = "abandoned"
-                    break
-
             if final_status == "abandoned":
                 break
 
-            last_state = state_dict
+            if not tap_success:
+                consecutive_missed_taps += 1
+                log.emit("tap_miss_unrecoverable", step=step,
+                         consecutive_misses=consecutive_missed_taps)
+                if consecutive_missed_taps >= 3:
+                    log.emit("stop", step=step, msg="3 consecutive missed taps")
+                    final_status = "abandoned"
+                    final_reason = "consecutive_missed_taps"
+                    break
+                # Even on miss, refresh state for next iteration
+                shot_path = _latest_shot(args.shot_dir, "autoplay_wait_")
+                state_dict, _ = snap_and_extract(device_arg, shot_path, args.level)
+                if state_dict is None:
+                    final_status = "abandoned"
+                    final_reason = "snap_failed_after_miss"
+                    break
+
+            # Loop-detection: if state hasn't changed for many consecutive steps,
+            # we're stuck even though taps "succeed"
+            if state_dict is not None and last_state is not None:
+                if state_signature(state_dict) == state_signature(last_state):
+                    consecutive_unchanged += 1
+                    if consecutive_unchanged >= 5:
+                        log.emit("stop", step=step,
+                                 msg="state hasn't changed in 5 steps — stuck loop")
+                        final_status = "abandoned"
+                        final_reason = "stuck_loop"
+                        break
+                else:
+                    consecutive_unchanged = 0
+
             step += 1
 
         else:
-            print(json.dumps({"event": "max_steps_reached", "step": step}))
+            log.emit("max_steps_reached", step=step)
             final_status = "abandoned"
+            final_reason = "max_steps"
 
     except KeyboardInterrupt:
-        print(json.dumps({"event": "keyboard_interrupt", "step": step}))
+        log.emit("keyboard_interrupt", step=step)
         final_status = "abandoned"
+        final_reason = "keyboard_interrupt"
+    except Exception as exc:
+        log.emit("exception", step=step, msg=str(exc), type=type(exc).__name__)
+        final_status = "abandoned"
+        final_reason = f"exception:{type(exc).__name__}"
 
-    end_run(runs_dir, run_id, final_status)
+    end_run(runs_dir, run_id, final_status, final_reason)
     if not args.no_stats:
         levels_root = ROOT / "data" / "levels"
         stats = integrate_run(levels_root, runs_dir, run_id)
@@ -368,16 +384,24 @@ def main() -> int:
     else:
         win_rate = None
 
-    print(json.dumps({
-        "event": "run_end",
-        "run_id": run_id,
-        "status": final_status,
-        "steps": step,
-        "level": args.level,
-        "level_win_rate": win_rate,
-    }))
-
+    duration = round(time.time() - run_started, 1)
+    log.emit(
+        "run_end",
+        run_id=run_id, status=final_status, reason=final_reason,
+        steps=step, level=args.level,
+        duration_sec=duration, level_win_rate=win_rate,
+    )
+    log.close()
     return {"won": 0, "lost": 1, "abandoned": 2}.get(final_status, 2)
+
+
+def _latest_shot(shot_dir: Path, prefix: str) -> Path:
+    """Find the most recent file matching the prefix. Used to track which
+    snap file the adaptive_wait helper produced."""
+    candidates = sorted(shot_dir.glob(f"{prefix}*.png"))
+    if candidates:
+        return candidates[-1]
+    return shot_dir / f"{prefix}fallback.png"
 
 
 if __name__ == "__main__":
