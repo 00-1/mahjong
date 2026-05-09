@@ -40,6 +40,10 @@ def decide(
     cleared_history: dict | None = None,
     surrender_threshold: float = -500.0,
     allow_surrender: bool = True,
+    use_uct: bool = False,
+    uct_iterations: int = 200,
+    uct_rollout_depth: int = 8,
+    anchor_priors: dict | None = None,
 ) -> dict:
     if label_fn is None:
         label_fn = lambda t: t  # noqa: E731
@@ -98,21 +102,41 @@ def decide(
     # search-based recommendation (it's only better than greedy in the
     # explore regime; greedy is correct when triplets are immediately
     # available).
+    # Use a search-based recommendation only in the explore regime
+    # (greedy is correct when triplets are immediately available).
+    # Two search options: depth-bounded lookahead (fast, shallow) or
+    # UCT (slower, but stretches effective horizon via rollouts). UCT
+    # takes precedence when both flags set.
     has_immediate_triplet = any(p.taps_needed > 0 and p.taps_needed <= 3 for p in plans) and plans
     lookahead_recommendation = None
-    if use_lookahead and not has_immediate_triplet:
+    search_method = None  # "uct" | "lookahead" | None
+    if (use_uct or use_lookahead) and not has_immediate_triplet:
+        from collections import Counter as _Counter
+        ch = _Counter(cleared_history) if cleared_history else None
         try:
-            from collections import Counter as _Counter
-            ch = _Counter(cleared_history) if cleared_history else None
-            lookahead_recommendation = lookahead_recommend(
-                state,
-                depth=lookahead_depth,
-                occult_predictions=occult_predictions,
-                inventory=inventory,
-                cleared_history=ch,
-            )
+            if use_uct:
+                from src.solver.uct import uct_recommend
+                lookahead_recommendation = uct_recommend(
+                    state,
+                    anchor_priors=anchor_priors,
+                    inventory=inventory,
+                    cleared_history=ch,
+                    n_iterations=uct_iterations,
+                    rollout_max_depth=uct_rollout_depth,
+                )
+                search_method = "uct"
+            else:
+                lookahead_recommendation = lookahead_recommend(
+                    state,
+                    depth=lookahead_depth,
+                    occult_predictions=occult_predictions,
+                    inventory=inventory,
+                    cleared_history=ch,
+                )
+                search_method = "lookahead"
         except Exception:
             lookahead_recommendation = None
+            search_method = None
 
     lookahead_used = False
     lookahead_expected_value = None
@@ -228,6 +252,7 @@ def decide(
         "lookahead_expected_value": (
             round(lookahead_expected_value, 3) if lookahead_expected_value is not None else None
         ),
+        "search_method": search_method,
         "reason": best.reason,
         "alternatives": alternatives,
         "triplet_sequence": triplet_sequence,

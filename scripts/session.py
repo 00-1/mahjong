@@ -47,7 +47,8 @@ def run_autoplay(level: int, args, *, attempt: int) -> dict:
                 "--surrender-threshold", "--surrender-step-floor",
                 "--surrender-min-main-board", "--surrender-sparse-grace",
                 "--burst-stability-window",
-                "--occult-confidence-threshold", "--posterior-min-confidence"):
+                "--occult-confidence-threshold", "--posterior-min-confidence",
+                "--uct-iterations", "--uct-rollout-depth"):
         val = getattr(args, opt[2:].replace("-", "_"), None)
         if val is not None:
             cmd.extend([opt, str(val)])
@@ -57,6 +58,8 @@ def run_autoplay(level: int, args, *, attempt: int) -> dict:
         cmd.append("--verbose")
     if args.use_lookahead:
         cmd.append("--use-lookahead")
+    if args.use_uct:
+        cmd.append("--use-uct")
     if args.learn_occult:
         cmd.append("--learn-occult")
     if args.learn_dim:
@@ -97,6 +100,14 @@ def main() -> int:
     p.add_argument("--max-consecutive-abandoned", type=int, default=3,
                    help="Halt after N consecutive abandoned attempts (setup issues, "
                         "snap failures, stale screens — NOT played losses). Default 3.")
+    p.add_argument("--use-uct", action="store_true",
+                   help="Use single-determinization UCT for EXPLORE decisions. "
+                        "Slower but stretches effective horizon via rollouts. "
+                        "Forwarded to autoplay.")
+    p.add_argument("--uct-iterations", type=int, default=None,
+                   help="Forwarded to autoplay.")
+    p.add_argument("--uct-rollout-depth", type=int, default=None,
+                   help="Forwarded to autoplay.")
     p.add_argument("--use-lookahead", action="store_true",
                    help="Forwarded to autoplay.")
     p.add_argument("--lookahead-depth", type=int, default=None,

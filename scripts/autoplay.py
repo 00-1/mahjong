@@ -121,6 +121,20 @@ def main() -> int:
                         "consulted when there's no clear win.")
     p.add_argument("--lookahead-depth", type=int, default=3,
                    help="Search depth when --use-lookahead is set (default 3).")
+    p.add_argument("--use-uct", action="store_true",
+                   help="Use single-determinization UCT instead of depth-bounded "
+                        "lookahead in EXPLORE-mode decisions. UCT samples a "
+                        "consistent d2 assignment from anchor priors then runs "
+                        "MCTS with bounded rollouts. Slower per decision but "
+                        "stretches the effective horizon. When both --use-uct "
+                        "and --use-lookahead are set, UCT wins.")
+    p.add_argument("--uct-iterations", type=int, default=200,
+                   help="UCT iterations per decision (default 200). Each "
+                        "iteration is one selection + expansion + rollout + "
+                        "backprop. Roughly 30ms each.")
+    p.add_argument("--uct-rollout-depth", type=int, default=8,
+                   help="Maximum rollout depth in UCT (default 8). Lower is "
+                        "faster but may miss longer setup sequences.")
     p.add_argument("--occult-confidence-threshold", type=float, default=0.99,
                    help="Minimum confidence required to use a live occult "
                         "prediction in lookahead simulation. Default 0.99 "
@@ -409,6 +423,11 @@ def main() -> int:
                 step >= args.surrender_step_floor and not state_is_suspect
             )
             decide_t0 = time.time()
+            # Lazy-load anchor priors once for UCT determinization
+            anchor_priors_for_uct = None
+            if args.use_uct:
+                from src.solver.economy import load_anchor_priors as _lap
+                anchor_priors_for_uct = _lap(levels_root, args.level)
             decision = decide_fn(
                 state_json_path,
                 image_size or (1220, 2712),
@@ -420,6 +439,10 @@ def main() -> int:
                 cleared_history=dict(cleared_history),
                 surrender_threshold=args.surrender_threshold,
                 allow_surrender=allow_surrender_now,
+                use_uct=args.use_uct,
+                uct_iterations=args.uct_iterations,
+                uct_rollout_depth=args.uct_rollout_depth,
+                anchor_priors=anchor_priors_for_uct,
             )
             decide_ms = int((time.time() - decide_t0) * 1000)
             record_step(
