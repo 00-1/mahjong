@@ -113,6 +113,13 @@ def main() -> int:
                    help="Anchor-driven occult prediction (multi-method ensemble incl. ORB). "
                         "Slower than --learn-dim (~1.5-3s/step) but much higher accuracy. "
                         "Writes data/levels/NN/occult_accuracy.json + anchor_priors.json.")
+    p.add_argument("--use-lookahead", action="store_true",
+                   help="Use multi-step search-based solver in EXPLORE regime "
+                        "(when no immediate triplet is available). Default depth 3. "
+                        "Greedy still picks for immediate triplets — search is only "
+                        "consulted when there's no clear win.")
+    p.add_argument("--lookahead-depth", type=int, default=3,
+                   help="Search depth when --use-lookahead is set (default 3).")
     args = p.parse_args()
 
     device_arg = ["-s", args.device] if args.device else []
@@ -180,13 +187,26 @@ def main() -> int:
                     final_reason = "adb_disconnected"
                     break
 
-            # Compute decision from current state
+            # Compute decision from current state. Pass occult predictions
+            # through to the simulator if --use-lookahead AND we computed
+            # them in the previous --learn-occult step.
+            occult_for_solver = None
+            if args.use_lookahead and last_occult_predictions:
+                # Convert OccultPrediction objects to {anchor_key: tile_id}
+                # — only high-confidence ones to avoid bad simulation.
+                occult_for_solver = {
+                    k: p.predicted_tile_id for k, p in last_occult_predictions.items()
+                    if p.confidence >= 0.5
+                }
             decide_t0 = time.time()
             decision = decide_fn(
                 ROOT / "data" / "extractions" / f"level_{args.level:02d}"
                 / shot_path.stem / "state.json",
                 image_size or (1220, 2712),
                 label_fn=label_fn,
+                use_lookahead=args.use_lookahead,
+                lookahead_depth=args.lookahead_depth,
+                occult_predictions=occult_for_solver,
             )
             decide_ms = int((time.time() - decide_t0) * 1000)
             record_step(

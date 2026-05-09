@@ -24,10 +24,19 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from src.model.diff import load_state
+from src.solver.lookahead import lookahead_recommend
 from src.solver.reactive import plan_triplets, suggest_moves
 
 
-def decide(state_path: Path, image_size: tuple[int, int], label_fn=None) -> dict:
+def decide(
+    state_path: Path,
+    image_size: tuple[int, int],
+    label_fn=None,
+    *,
+    use_lookahead: bool = False,
+    lookahead_depth: int = 3,
+    occult_predictions: dict | None = None,
+) -> dict:
     if label_fn is None:
         label_fn = lambda t: t  # noqa: E731
     state = load_state(state_path)
@@ -81,7 +90,32 @@ def decide(state_path: Path, image_size: tuple[int, int], label_fn=None) -> dict
             "state": _state_summary(state, label_fn),
         }
 
-    best = moves[0]
+    # If lookahead is enabled AND there are no immediate triplets, use the
+    # search-based recommendation (it's only better than greedy in the
+    # explore regime; greedy is correct when triplets are immediately
+    # available).
+    has_immediate_triplet = any(p.taps_needed > 0 and p.taps_needed <= 3 for p in plans) and plans
+    lookahead_recommendation = None
+    if use_lookahead and not has_immediate_triplet:
+        try:
+            lookahead_recommendation = lookahead_recommend(
+                state,
+                depth=lookahead_depth,
+                occult_predictions=occult_predictions,
+            )
+        except Exception:
+            lookahead_recommendation = None
+
+    if lookahead_recommendation is not None and lookahead_recommendation["best_location"]:
+        # Find the matching move in the existing list (for tap coords)
+        target_loc = lookahead_recommendation["best_location"]
+        matching = [m for m in moves if m.location == target_loc]
+        if matching:
+            best = matching[0]
+        else:
+            best = moves[0]
+    else:
+        best = moves[0]
     bbox = _location_to_bbox(state, best.location)
 
     # If the top move is part of a triplet that's fully tappable now (all

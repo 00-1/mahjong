@@ -43,25 +43,26 @@ class SearchResult:
 def state_value(state: BoardState) -> float:
     """Heuristic value of a state. Higher is better.
 
-    Components:
-    - Triplet potential: tile types with >=3 visible (bright + tray) =
-      future triplet possibilities. +5 per such tile type.
-    - Tray fullness: linear penalty growing toward 7. (full = -100,
-      6 = -20, 0 = 0)
-    - Tiles remaining: -1 per remaining tile (encourages clearing).
-    - Almost-triplet (2-in-tray): +3 per such tile type — one more tap
-      from completion.
-    - Orphan tiles (1 visible total, 0 in tray): -2 per such — these are
-      doomed unless we uncover more, drag down expected value.
+    Components and rough magnitudes:
+    - Win/loss terminals: ±1000
+    - Triplet realisable (>=3 of a type combined visible+tray): +5/type
+    - Near-triplet seeds (2-in-tray): +5/type — high reward, almost a clear
+    - 1-in-tray seeds: +1/type — versatile, can support future triplet
+    - Orphan visible (1 visible, 0 in tray, no path to a 2nd): -3/type
+    - Tray-fullness: quadratic penalty toward 7
+    - Tile-remaining: -0.5 per (encourages clearing)
+    - Diversity-of-tray bonus: more distinct tile types in tray = more
+      tap targets that complete a triplet. +0.5 per distinct type
+      (capped at 4 — beyond that, tray is too full).
     """
     if not state.main_board and not state.queues:
         if tray_filled(state) == 0:
             return 1000  # WIN
-        return 0  # All cleared but tray non-empty — abandoned
+        return 0
 
     tf = tray_filled(state)
     if tf >= 7:
-        return -1000  # LOSS
+        return -1000
 
     visible_count: Counter = Counter()
     for c in state.main_board:
@@ -77,25 +78,35 @@ def state_value(state: BoardState) -> float:
             tray_per_tile[t.tile_id] += 1
 
     score = 0.0
-
-    # Triplet potential
     all_tiles = set(visible_count) | set(tray_per_tile)
     for tid in all_tiles:
-        total = visible_count.get(tid, 0) + tray_per_tile.get(tid, 0)
+        v = visible_count.get(tid, 0)
+        t = tray_per_tile.get(tid, 0)
+        total = v + t
         if total >= 3:
             score += 5.0  # triplet realisable
-        if tray_per_tile.get(tid, 0) == 2:
-            score += 3.0  # one more tap = clear
-        if visible_count.get(tid, 0) == 1 and tray_per_tile.get(tid, 0) == 0:
-            score -= 2.0  # orphan
+        if t == 2:
+            score += 5.0  # near-triplet seed: very valuable
+        elif t == 1:
+            score += 1.0  # versatile seed
+        if v == 1 and t == 0:
+            score -= 3.0  # orphan
+
+    # Diversity bonus: tray with several distinct types is more
+    # absorbent (more taps that don't push us toward overflow).
+    distinct_in_tray = sum(1 for n in tray_per_tile.values() if n > 0)
+    score += min(distinct_in_tray, 4) * 0.5
 
     # Tray penalty (quadratic — really painful as we approach 7)
     score -= (tf / 7.0) ** 2 * 30.0
 
-    # Tile-remaining penalty — moderate encouragement to clear
+    # Remaining tiles: each is a tile we still need to clear. Heavy
+    # penalty so clearing 3 tiles via triplet is +6 from this term alone,
+    # offsetting the +5 "triplet realisable" we lose when the triplet
+    # is consumed.
     remaining = sum(1 for c in state.main_board if c.tile_id) + \
                 sum(1 for q in state.queues if q.tile_id)
-    score -= remaining * 0.3
+    score -= remaining * 2.0
 
     return score
 
@@ -159,9 +170,11 @@ def search_best(
         )
         # Discount slightly per step (prefer faster solutions)
         sub_value = sub.expected_value - 0.1
-        # Triplet clears are immediately rewarded
+        # Triplet clears get strong reward — independent of state-value
+        # accounting. Captures the fact that we've made tangible progress
+        # (3 tiles permanently removed).
         if sim.triplet_cleared:
-            sub_value += 10.0
+            sub_value += 30.0
 
         if sub_value > best_value:
             best_value = sub_value
