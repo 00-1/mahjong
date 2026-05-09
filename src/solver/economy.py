@@ -234,6 +234,198 @@ def merge_occult_and_priors(
     return out
 
 
+def _compute_remaining_pool(
+    state: dict,
+    inventory: dict | None,
+    cleared_history: dict | None,
+) -> dict[str, int]:
+    """How many copies of each tile_id remain unaccounted-for —
+    i.e. could plausibly be hiding at d2 of some anchor.
+
+    remaining[tid] = inventory[tid] - cleared - visible_main - visible_queue - tray
+
+    Without an inventory, returns an empty dict (caller should fall
+    back to unconditioned priors).
+    """
+    if not inventory or not inventory.get("tiles"):
+        return {}
+    remaining: dict[str, int] = {
+        tid: int(info.get("count", 3))
+        for tid, info in inventory["tiles"].items()
+    }
+    for c in state.get("main_board", []):
+        tid = c.get("tile_id")
+        if tid in remaining:
+            remaining[tid] = max(0, remaining[tid] - 1)
+    for q in state.get("queues", []):
+        tid = q.get("tile_id")
+        if tid in remaining:
+            remaining[tid] = max(0, remaining[tid] - 1)
+    for t in state.get("tray", []):
+        tid = t.get("tile_id")
+        if tid in remaining:
+            remaining[tid] = max(0, remaining[tid] - 1)
+    for tid, n in (cleared_history or {}).items():
+        if tid in remaining:
+            remaining[tid] = max(0, remaining[tid] - n)
+    return remaining
+
+
+def bayesian_reveal_posterior(
+    state: dict,
+    anchor_priors: dict,
+    inventory: dict | None,
+    cleared_history: dict | None = None,
+    target_depth: int = 2,
+) -> dict[tuple, dict[str, float]]:
+    """Posterior over what tile is at each anchor's `target_depth`,
+    conditioned on visible state + cleared history + level inventory.
+
+    Math:
+        P(d2 = tid | anchor=A, observations)
+            ∝ P_prior(d2 = tid | A) * remaining(tid)
+        with normalization over tids consistent with remaining > 0.
+
+    Where:
+        P_prior comes from `data/levels/<NN>/anchor_priors.json` d2.
+        remaining(tid) = inventory.count - cleared - visible - tray.
+
+    This replaces the 0%-accuracy 4-method visual ensemble. It's
+    closed-form, deterministic, computes in <50ms for a typical
+    level. Returns posterior distributions per anchor; callers can
+    take the MAP estimate or sample.
+
+    Returns: {("main_board", r, c) | ("queue", qid): {tile_id: prob, ...}}
+    """
+    remaining = _compute_remaining_pool(state, inventory, cleared_history)
+    posteriors: dict[tuple, dict[str, float]] = {}
+    for anchor_key, anchor_data in anchor_priors.get("anchors", {}).items():
+        try:
+            r, c = [int(x) for x in anchor_key.strip("()").split(",")]
+        except (ValueError, AttributeError):
+            continue
+        depth_data = anchor_data.get(f"d{target_depth}", {})
+        total = depth_data.get("total", 0)
+        if total == 0:
+            continue
+        counts = depth_data.get("tiles", {})
+        if not counts:
+            continue
+        # Compute unnormalized posterior. If inventory is absent we
+        # fall back to the prior (remaining acts as a uniform multiplier
+        # which cancels in normalization).
+        scored: dict[str, float] = {}
+        for tid, n in counts.items():
+            prior = n / total
+            if remaining:
+                r_count = remaining.get(tid, 0)
+                if r_count <= 0:
+                    continue  # tile is exhausted — eliminate
+                scored[tid] = prior * r_count
+            else:
+                scored[tid] = prior
+        norm = sum(scored.values())
+        if norm <= 0:
+            continue
+        posteriors[("main_board", r, c)] = {
+            tid: p / norm for tid, p in scored.items()
+        }
+    return posteriors
+
+
+def verify_bayesian_predictions(
+    predictions: dict[tuple, str],
+    new_state: dict,
+) -> list[dict]:
+    """Compare last step's MAP estimates to the now-revealed bright
+    tiles in new_state. Returns one comparison per anchor that was
+    predicted AND is now visible. Used for accuracy tracking.
+
+    Output entries match the schema of verify_anchor_predictions
+    (occult.py) so they can flow through the same downstream
+    aggregators."""
+    main_lookup = {
+        ("main_board", c["row"], c["col"]): c.get("tile_id")
+        for c in new_state.get("main_board", [])
+    }
+    queue_lookup = {
+        ("queue", q["queue_id"]): q.get("tile_id")
+        for q in new_state.get("queues", [])
+    }
+    full_lookup = {**main_lookup, **queue_lookup}
+    out: list[dict] = []
+    for key, predicted_tid in predictions.items():
+        actual = full_lookup.get(key)
+        if actual is None:
+            continue
+        out.append({
+            "anchor_key": list(key),
+            "predicted_tile_id": predicted_tid,
+            "actual_tile_id": actual,
+            "correct": predicted_tid == actual,
+            "method": "bayesian",
+        })
+    return out
+
+
+def aggregate_bayesian_accuracy(
+    levels_root: Path,
+    level: int,
+    comparisons: list[dict],
+) -> None:
+    """Roll up Bayesian-predictor accuracy into
+    data/levels/<NN>/bayesian_accuracy.json. Mirrors
+    occult_accuracy.json's schema for direct comparison."""
+    p = levels_root / f"{level:02d}" / "bayesian_accuracy.json"
+    p.parent.mkdir(parents=True, exist_ok=True)
+    if p.exists():
+        data = json.loads(p.read_text())
+    else:
+        data = {
+            "level": level, "total": 0, "correct": 0,
+            "by_predicted": {}, "by_actual": {},
+            "confusion": {},
+        }
+    for c in comparisons:
+        data["total"] += 1
+        if c["correct"]:
+            data["correct"] += 1
+        bp = data["by_predicted"].setdefault(c["predicted_tile_id"], {"total": 0, "correct": 0})
+        bp["total"] += 1
+        if c["correct"]:
+            bp["correct"] += 1
+        ba = data["by_actual"].setdefault(c["actual_tile_id"], {"total": 0, "correct": 0})
+        ba["total"] += 1
+        if c["correct"]:
+            ba["correct"] += 1
+        if not c["correct"]:
+            confkey = f"{c['predicted_tile_id']}->{c['actual_tile_id']}"
+            data["confusion"][confkey] = data["confusion"].get(confkey, 0) + 1
+    data["accuracy"] = data["correct"] / data["total"] if data["total"] else 0.0
+    p.write_text(json.dumps(data, indent=2))
+
+
+def map_estimates(
+    posteriors: dict[tuple, dict[str, float]],
+    min_confidence: float = 0.4,
+) -> dict[tuple, str]:
+    """Reduce per-anchor posterior distributions to a single MAP
+    estimate per anchor, suppressing low-confidence anchors.
+
+    min_confidence: only emit a prediction if the top tile's
+    posterior probability is at least this. Tunable; 0.4 means we
+    only act on a prediction when there's at least 40% certainty.
+    """
+    out: dict[tuple, str] = {}
+    for key, dist in posteriors.items():
+        if not dist:
+            continue
+        best_tid = max(dist, key=dist.get)
+        if dist[best_tid] >= min_confidence:
+            out[key] = best_tid
+    return out
+
+
 def summary_string(economies: dict[str, TileEconomy], label_fn=None) -> str:
     """Human-readable rendering for logging."""
     if label_fn is None:

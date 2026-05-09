@@ -132,6 +132,12 @@ def main() -> int:
                         "decide() returns UNRECOVERABLE and the run ends "
                         "as 'lost' — saves continuing to tap into the "
                         "inevitable game-over. Default -500.")
+    p.add_argument("--posterior-min-confidence", type=float, default=0.4,
+                   help="Minimum posterior probability required to commit "
+                        "a Bayesian reveal MAP estimate to the lookahead "
+                        "simulator. Anchors below this are treated as "
+                        "'unknown reveal' (position becomes empty). "
+                        "Default 0.4.")
     args = p.parse_args()
 
     device_arg = ["-s", args.device] if args.device else []
@@ -161,6 +167,7 @@ def main() -> int:
     pre_npz_state = None  # last state where the puzzle WAS visible (for heuristic_outcome)
     last_dim_predictions: list = []  # for verifying against next bright state (--learn-dim)
     last_occult_predictions: dict = {}  # anchor-keyed predictions (--learn-occult)
+    last_bayesian_predictions: dict = {}  # anchor-keyed Bayesian MAP estimates (verified next step)
     run_started = time.time()
     levels_root = ROOT / "data" / "levels"
     run_root = runs_dir / run_id
@@ -219,25 +226,54 @@ def main() -> int:
                     final_reason = "adb_disconnected"
                     break
 
-            # Compute decision from current state. Build the combined
-            # occult+priors prediction map for lookahead simulation.
+            # Compute decision from current state. Build the reveal-prediction
+            # map for lookahead simulation. We use a Bayesian posterior over
+            # what tile is at d2 of each anchor, conditioned on visible state +
+            # cleared_history + level inventory. This is closed-form,
+            # deterministic, replaces the 0%-accuracy 4-method ensemble.
             occult_for_solver = None
             if args.use_lookahead:
-                from src.solver.economy import merge_occult_and_priors
-                # Live occult predictor accuracy is tracked at
-                # data/levels/<NN>/occult_accuracy.json. Until it's
-                # demonstrably above the prior baseline, rely on anchor
-                # priors only (confidence_threshold=0.99 effectively
-                # excludes live predictions).
-                occult_for_solver = merge_occult_and_priors(
-                    last_occult_predictions if last_occult_predictions else None,
-                    levels_root, args.level,
-                    confidence_threshold=args.occult_confidence_threshold,
-                    prior_min_obs=3,
-                    prior_min_share=0.4,
+                from src.solver.economy import (
+                    bayesian_reveal_posterior, map_estimates, load_anchor_priors,
                 )
-                if not occult_for_solver:
-                    occult_for_solver = None
+                # Verify last step's Bayesian predictions against this
+                # step's now-bright state, then aggregate accuracy.
+                if last_bayesian_predictions:
+                    from src.solver.economy import (
+                        verify_bayesian_predictions, aggregate_bayesian_accuracy,
+                    )
+                    bay_comps = verify_bayesian_predictions(
+                        last_bayesian_predictions, state_dict,
+                    )
+                    if bay_comps:
+                        bcorrect = sum(1 for c in bay_comps if c["correct"])
+                        log.emit("bayesian_verify", step=step,
+                                 total=len(bay_comps), correct=bcorrect,
+                                 comparisons=bay_comps[:5])
+                        if not args.no_stats:
+                            aggregate_bayesian_accuracy(
+                                levels_root, args.level, bay_comps,
+                            )
+                priors_data = load_anchor_priors(levels_root, args.level)
+                if priors_data:
+                    posteriors = bayesian_reveal_posterior(
+                        state_dict, priors_data, inventory,
+                        cleared_history=dict(cleared_history),
+                    )
+                    occult_for_solver = map_estimates(
+                        posteriors, min_confidence=args.posterior_min_confidence,
+                    )
+                    log.emit("bayesian_predict", step=step,
+                             n_anchors_with_posterior=len(posteriors),
+                             n_anchors_committed=len(occult_for_solver or {}),
+                             top_predictions=[
+                                 {"key": list(k), "tid": t}
+                                 for k, t in list((occult_for_solver or {}).items())[:5]
+                             ])
+                    # Stash for next-step verification.
+                    last_bayesian_predictions = dict(occult_for_solver or {})
+                    if not occult_for_solver:
+                        occult_for_solver = None
             state_json_path = (
                 ROOT / "data" / "extractions" / f"level_{args.level:02d}"
                 / shot_path.stem / "state.json"
