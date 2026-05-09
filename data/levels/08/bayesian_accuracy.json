@@ -1,68 +1,72 @@
 {
   "level": 8,
-  "total": 189,
-  "correct": 40,
+  "total": 332,
+  "correct": 80,
   "by_predicted": {
     "tile_004": {
       "total": 31,
       "correct": 9
     },
     "tile_012": {
-      "total": 47,
+      "total": 50,
       "correct": 3
+    },
+    "tile_002": {
+      "total": 36,
+      "correct": 6
+    },
+    "tile_007": {
+      "total": 49,
+      "correct": 14
+    },
+    "tile_005": {
+      "total": 23,
+      "correct": 0
+    },
+    "tile_001": {
+      "total": 42,
+      "correct": 5
+    },
+    "tile_008": {
+      "total": 21,
+      "correct": 7
+    },
+    "tile_006": {
+      "total": 34,
+      "correct": 19
+    },
+    "tile_009": {
+      "total": 9,
+      "correct": 0
+    },
+    "tile_010": {
+      "total": 25,
+      "correct": 8
+    },
+    "tile_013": {
+      "total": 12,
+      "correct": 9
+    }
+  },
+  "by_actual": {
+    "tile_006": {
+      "total": 37,
+      "correct": 19
+    },
+    "tile_010": {
+      "total": 16,
+      "correct": 8
+    },
+    "tile_004": {
+      "total": 53,
+      "correct": 9
     },
     "tile_002": {
       "total": 35,
       "correct": 6
     },
-    "tile_007": {
-      "total": 22,
-      "correct": 14
-    },
-    "tile_005": {
-      "total": 12,
-      "correct": 0
-    },
-    "tile_001": {
-      "total": 19,
-      "correct": 5
-    },
-    "tile_008": {
-      "total": 1,
-      "correct": 0
-    },
-    "tile_006": {
-      "total": 4,
-      "correct": 0
-    },
     "tile_009": {
-      "total": 9,
-      "correct": 0
-    },
-    "tile_010": {
-      "total": 9,
-      "correct": 3
-    }
-  },
-  "by_actual": {
-    "tile_006": {
-      "total": 18,
-      "correct": 0
-    },
-    "tile_010": {
-      "total": 11,
-      "correct": 3
-    },
-    "tile_004": {
-      "total": 27,
-      "correct": 9
-    },
-    "tile_002": {
-      "total": 34,
-      "correct": 6
-    },
-    "tile_009": {
-      "total": 1,
+      "total": 14,
       "correct": 0
     },
     "tile_003": {
@@ -70,23 +74,23 @@
       "correct": 0
     },
     "tile_005": {
-      "total": 17,
+      "total": 20,
       "correct": 0
     },
     "tile_007": {
-      "total": 18,
+      "total": 23,
       "correct": 14
     },
     "tile_013": {
-      "total": 6,
-      "correct": 0
+      "total": 33,
+      "correct": 9
     },
     "tile_011": {
-      "total": 12,
+      "total": 13,
       "correct": 0
     },
     "tile_012": {
-      "total": 5,
+      "total": 22,
       "correct": 3
     },
     "tile_001": {
@@ -94,8 +98,8 @@
       "correct": 5
     },
     "tile_008": {
-      "total": 3,
-      "correct": 0
+      "total": 29,
+      "correct": 7
     },
     "tile_014": {
       "total": 5,
@@ -113,13 +117,13 @@
     "tile_007->tile_002": 2,
     "tile_005->tile_009": 1,
     "tile_002->tile_003": 12,
-    "tile_012->tile_005": 10,
+    "tile_012->tile_005": 13,
     "tile_001->tile_002": 2,
     "tile_002->tile_013": 3,
     "tile_008->tile_002": 1,
-    "tile_001->tile_004": 11,
+    "tile_001->tile_004": 34,
     "tile_012->tile_003": 8,
-    "tile_006->tile_011": 1,
+    "tile_006->tile_011": 2,
     "tile_006->tile_005": 3,
     "tile_004->tile_003": 2,
     "tile_004->tile_012": 2,
@@ -128,7 +132,7 @@
     "tile_004->tile_002": 7,
     "tile_005->tile_004": 7,
     "tile_002->tile_007": 2,
-    "tile_007->tile_008": 3,
+    "tile_007->tile_008": 19,
     "tile_005->tile_007": 2,
     "tile_007->tile_005": 1,
     "tile_002->tile_011": 3,
@@ -140,7 +144,20 @@
     "tile_010->tile_014": 5,
     "tile_002->tile_001": 1,
     "tile_007->tile_006": 2,
-    "tile_005->tile_015": 2
+    "tile_005->tile_015": 2,
+    "tile_006->tile_013": 5,
+    "tile_005->tile_012": 4,
+    "tile_007->tile_009": 9,
+    "tile_008->tile_004": 2,
+    "tile_008->tile_013": 6,
+    "tile_008->tile_007": 5,
+    "tile_013->tile_008": 3,
+    "tile_010->tile_012": 11,
+    "tile_002->tile_004": 1,
+    "tile_005->tile_013": 7,
+    "tile_007->tile_012": 2,
+    "tile_006->tile_009": 4,
+    "tile_006->tile_002": 1
   },
-  "accuracy": 0.21164021164021163
+  "accuracy": 0.24096385542168675
 }

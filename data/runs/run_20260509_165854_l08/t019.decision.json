@@ -1,0 +1,76 @@
+{
+  "should_stop": false,
+  "reason_code": "EXPLORE",
+  "tap": {
+    "x": 272,
+    "y": 837,
+    "location": "(2,1)"
+  },
+  "tile_id": "tile_012",
+  "label": "sunflower",
+  "confidence": 0.421,
+  "score": -1.571,
+  "lookahead_used": true,
+  "lookahead_expected_value": 15.894,
+  "reason": "adds to tray; 1 already in tray, 2 total visible",
+  "alternatives": [
+    {
+      "x": 272,
+      "y": 837,
+      "location": "(2,1)",
+      "tile_id": "tile_012",
+      "label": "sunflower",
+      "score": -1.5714285714285712,
+      "reason": "adds to tray; 1 already in tray, 2 total visible"
+    },
+    {
+      "x": 258,
+      "y": 1341,
+      "location": "queue:left_lower",
+      "tile_id": "tile_006",
+      "label": "lantern",
+      "score": -2.071428571428571,
+      "reason": "adds to tray; 0 already in tray, 2 total visible"
+    },
+    {
+      "x": 808,
+      "y": 837,
+      "location": "(2,4)",
+      "tile_id": "tile_013",
+      "label": "dandelion",
+      "score": -2.571428571428571,
+      "reason": "adds to tray; 0 already in tray, 2 total visible"
+    }
+  ],
+  "triplet_sequence": null,
+  "state": {
+    "level": 8,
+    "image_size": [
+      1080,
+      2400
+    ],
+    "tray_filled": 2,
+    "tray": [
+      "lotus",
+      "sunflower"
+    ],
+    "main_board_count": 9,
+    "queue_count": 2,
+    "tile_counts": {
+      "bee": 1,
+      "kite": 1,
+      "blue_butterfly": 1,
+      "sunflower": 2,
+      "dandelion": 2,
+      "paper_crane": 1,
+      "pink_daisy": 1,
+      "lantern": 2,
+      "lotus": 2
+    },
+    "looks_like_puzzle": true
+  },
+  "image_size": {
+    "w": 1080,
+    "h": 2400
+  }
+}
