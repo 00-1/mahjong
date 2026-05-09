@@ -197,7 +197,8 @@
       "samples": [
         "tiles/samples/tile_017_00.jpg",
         "tiles/samples/tile_017_01.jpg",
-        "tiles/samples/tile_017_02.jpg"
+        "tiles/samples/tile_017_02.jpg",
+        "tiles/samples/tile_017_03.jpg"
       ],
       "first_seen": "/data/data/com.termux/files/home/snaps/autoplay/autoplay_wait_1778338099395_1.png"
     },
@@ -208,7 +209,8 @@
       "samples": [
         "tiles/samples/tile_018_00.jpg",
         "tiles/samples/tile_018_01.jpg",
-        "tiles/samples/tile_018_02.jpg"
+        "tiles/samples/tile_018_02.jpg",
+        "tiles/samples/tile_018_03.jpg"
       ],
       "first_seen": "/data/data/com.termux/files/home/snaps/autoplay/autoplay_wait_1778338099395_1.png"
     }
