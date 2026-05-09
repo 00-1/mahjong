@@ -356,3 +356,76 @@ FORWARD WORK if more iteration desired:
   to be useful.
 - Per-anchor confidence learning: the filter is a static threshold;
   dynamic per-anchor calibration would help once more data lands.
+
+## Round 6 — Determinized UCT shipped (opt-in)
+
+After the full validation pass and identifying depth-3 lookahead as
+the heuristic-search ceiling, implemented single-determinization UCT
+per `optimal_solver_plan.md` Phase B.
+
+### `src/solver/uct.py` (~280 LOC)
+- `determinize()`: samples a per-anchor d2 assignment from priors
+  weighted by remaining-inventory.
+- UCT loop: UCB1 selection (c=1.5), expansion of one untried action
+  per iteration, bounded-depth rollout with greedy-prefer-triplets
+  bias, state_value-evaluated leaves.
+- `uct_recommend()` returns the same shape as `lookahead_recommend()`
+  so `decide()` can swap them.
+
+### Wiring
+- `decide.py`: new `use_uct`, `uct_iterations`, `uct_rollout_depth`,
+  `anchor_priors` params. When `use_uct=True` and there's no
+  immediate triplet, runs UCT instead of lookahead.
+- Decision dict gains `search_method` field ("uct" | "lookahead" |
+  None) for post-hoc analysis.
+- `autoplay.py`: `--use-uct` flag (default off), `--uct-iterations`
+  (default 200), `--uct-rollout-depth` (default 8). Lazy-loads
+  anchor priors when UCT enabled.
+- `session.py`: forwards.
+
+### Why default off
+A/B forward-simulation on a saved start state showed UCT and
+lookahead both plateau at 3 triplets / step 15 / lost. Both are
+bottlenecked by the same thing: when no high-confidence d2
+prediction exists for an anchor, the simulator treats the position
+as becoming empty after a tap. UCT samples reveals (so has more
+data than lookahead's MAP-only) but commits to that single sample
+per decision; if the sample happens to be unfavourable, UCT
+follows it.
+
+UCT's real value comes from real-game reveals: on the phone the
+ACTUAL d2 tile appears after a tap, and UCT can adapt run-to-run
+in ways depth-bounded lookahead can't. The forward-simulator's
+pessimism is the bench's limit, not the algorithm's.
+
+### What's left for true ISMCTS
+Re-determinize per iteration so different rollouts average across
+plausible worlds. ~50 LOC delta from current UCT — keep tree
+structure (action-keyed) but resample determinization each
+iteration, traverse by action. Worth doing if UCT-as-shipped
+doesn't materially beat lookahead in live runs.
+
+## Final state of the day's iteration
+
+8 commits over 4+ rounds:
+- 36514b1: surrender fix + burst stability + tray-pair bonus + verifier
+- a15c7e1: per-anchor Bayesian filter
+- d022e4f: anchor priors rebuild + rebuild_anchor_priors.py
+- b2ebe63: session.py flag forwarding
+- 4e15c0f: round 4-5 audit doc
+- f42b19e: UCT solver
+
+Vision pipeline: 99.76% match rate, 0 tap-target mismatches.
+Strategy: heuristic lookahead at depth=3 with surrender guard +
+tray-pair-completion bonus + per-anchor Bayesian reveals.
+Alternative solver: UCT shipped behind --use-uct.
+Diagnostics: complete (commit logging per run, intended-vs-actual
+per tap, unmatched_positions auto-write, bayesian_accuracy with
+correct verifier).
+
+The ceiling now is fundamentally about either:
+1. Live-game reveals (which neither offline simulator can predict
+   for random anchors) — UCT might help here on phone runs.
+2. ISMCTS-style averaging across determinizations — ~50 LOC more.
+
+Branch is in good shape for live runs.
