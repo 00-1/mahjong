@@ -195,7 +195,8 @@
       "phash": "a6ce7996f84c8064bf73ae11813573f3dda0452359afe9f98b90369580bd84e1",
       "label": null,
       "samples": [
-        "tiles/samples/tile_017_00.jpg"
+        "tiles/samples/tile_017_00.jpg",
+        "tiles/samples/tile_017_01.jpg"
       ],
       "first_seen": "/data/data/com.termux/files/home/snaps/autoplay/autoplay_wait_1778338099395_1.png"
     },
@@ -204,7 +205,8 @@
       "phash": "bb900bd932f434fe933f3cc338c1e30dccb2724d730fcd3034cdf332cc1074c3",
       "label": null,
       "samples": [
-        "tiles/samples/tile_018_00.jpg"
+        "tiles/samples/tile_018_00.jpg",
+        "tiles/samples/tile_018_01.jpg"
       ],
       "first_seen": "/data/data/com.termux/files/home/snaps/autoplay/autoplay_wait_1778338099395_1.png"
     }

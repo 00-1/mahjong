@@ -190,7 +190,7 @@ def snap_detections(
     *,
     main_max_distance: float = 60.0,
     tray_max_distance: float = 60.0,
-    queue_cy_tolerance: float = 50.0,
+    queue_cy_tolerance: float = 75.0,
 ) -> tuple[list[SnapResult], list[int]]:
     """Snap detections to template anchors with zone-aware logic.
 

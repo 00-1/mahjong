@@ -10,63 +10,103 @@
       "col": 0,
       "queue_id": null,
       "cx": 155,
-      "cy": 712
+      "cy": 701
     },
     {
       "zone": "main_board",
       "row": 0,
       "col": 1,
       "queue_id": null,
-      "cx": 307,
-      "cy": 712
+      "cx": 231,
+      "cy": 701
     },
     {
       "zone": "main_board",
       "row": 0,
       "col": 2,
       "queue_id": null,
-      "cx": 458,
-      "cy": 712
+      "cx": 307,
+      "cy": 701
     },
     {
       "zone": "main_board",
       "row": 0,
       "col": 3,
       "queue_id": null,
-      "cx": 761,
-      "cy": 712
+      "cx": 458,
+      "cy": 701
     },
     {
       "zone": "main_board",
       "row": 0,
       "col": 4,
       "queue_id": null,
-      "cx": 912,
-      "cy": 712
+      "cx": 534,
+      "cy": 701
     },
     {
       "zone": "main_board",
       "row": 0,
       "col": 5,
       "queue_id": null,
-      "cx": 1064,
-      "cy": 712
+      "cx": 685,
+      "cy": 701
     },
     {
       "zone": "main_board",
-      "row": 5,
+      "row": 0,
       "col": 6,
       "queue_id": null,
-      "cx": 610,
-      "cy": 782
+      "cx": 761,
+      "cy": 701
+    },
+    {
+      "zone": "main_board",
+      "row": 0,
+      "col": 7,
+      "queue_id": null,
+      "cx": 912,
+      "cy": 701
+    },
+    {
+      "zone": "main_board",
+      "row": 0,
+      "col": 8,
+      "queue_id": null,
+      "cx": 988,
+      "cy": 701
+    },
+    {
+      "zone": "main_board",
+      "row": 0,
+      "col": 9,
+      "queue_id": null,
+      "cx": 1064,
+      "cy": 701
+    },
+    {
+      "zone": "main_board",
+      "row": 1,
+      "col": 0,
+      "queue_id": null,
+      "cx": 307,
+      "cy": 781
+    },
+    {
+      "zone": "main_board",
+      "row": 1,
+      "col": 1,
+      "queue_id": null,
+      "cx": 458,
+      "cy": 781
     },
     {
       "zone": "main_board",
       "row": 1,
       "col": 2,
       "queue_id": null,
-      "cx": 458,
-      "cy": 874
+      "cx": 610,
+      "cy": 781
     },
     {
       "zone": "main_board",
@@ -74,31 +114,63 @@
       "col": 3,
       "queue_id": null,
       "cx": 761,
-      "cy": 874
+      "cy": 781
     },
     {
       "zone": "main_board",
-      "row": 6,
-      "col": 6,
+      "row": 1,
+      "col": 4,
       "queue_id": null,
-      "cx": 610,
-      "cy": 946
+      "cx": 912,
+      "cy": 781
+    },
+    {
+      "zone": "main_board",
+      "row": 2,
+      "col": 0,
+      "queue_id": null,
+      "cx": 458,
+      "cy": 863
     },
     {
       "zone": "main_board",
       "row": 2,
       "col": 1,
       "queue_id": null,
-      "cx": 307,
-      "cy": 956
+      "cx": 534,
+      "cy": 863
     },
     {
       "zone": "main_board",
       "row": 2,
-      "col": 4,
+      "col": 2,
       "queue_id": null,
-      "cx": 912,
-      "cy": 956
+      "cx": 685,
+      "cy": 863
+    },
+    {
+      "zone": "main_board",
+      "row": 2,
+      "col": 3,
+      "queue_id": null,
+      "cx": 761,
+      "cy": 863
+    },
+    {
+      "zone": "main_board",
+      "row": 3,
+      "col": 0,
+      "queue_id": null,
+      "cx": 307,
+      "cy": 945
+    },
+    {
+      "zone": "main_board",
+      "row": 3,
+      "col": 1,
+      "queue_id": null,
+      "cx": 382,
+      "cy": 945
     },
     {
       "zone": "main_board",
@@ -106,47 +178,55 @@
       "col": 2,
       "queue_id": null,
       "cx": 458,
-      "cy": 1037
+      "cy": 945
     },
     {
       "zone": "main_board",
       "row": 3,
       "col": 3,
       "queue_id": null,
-      "cx": 761,
-      "cy": 1037
+      "cx": 610,
+      "cy": 945
     },
     {
       "zone": "main_board",
-      "row": 7,
-      "col": 6,
+      "row": 3,
+      "col": 4,
       "queue_id": null,
-      "cx": 610,
-      "cy": 1108
+      "cx": 761,
+      "cy": 945
+    },
+    {
+      "zone": "main_board",
+      "row": 3,
+      "col": 5,
+      "queue_id": null,
+      "cx": 912,
+      "cy": 945
     },
     {
       "zone": "main_board",
       "row": 4,
       "col": 0,
       "queue_id": null,
-      "cx": 155,
-      "cy": 1200
+      "cx": 458,
+      "cy": 1026
     },
     {
       "zone": "main_board",
       "row": 4,
       "col": 1,
       "queue_id": null,
-      "cx": 307,
-      "cy": 1200
+      "cx": 534,
+      "cy": 1026
     },
     {
       "zone": "main_board",
       "row": 4,
       "col": 2,
       "queue_id": null,
-      "cx": 458,
-      "cy": 1200
+      "cx": 685,
+      "cy": 1026
     },
     {
       "zone": "main_board",
@@ -154,23 +234,135 @@
       "col": 3,
       "queue_id": null,
       "cx": 761,
-      "cy": 1200
+      "cy": 1026
     },
     {
       "zone": "main_board",
-      "row": 4,
+      "row": 5,
+      "col": 0,
+      "queue_id": null,
+      "cx": 307,
+      "cy": 1108
+    },
+    {
+      "zone": "main_board",
+      "row": 5,
+      "col": 1,
+      "queue_id": null,
+      "cx": 458,
+      "cy": 1108
+    },
+    {
+      "zone": "main_board",
+      "row": 5,
+      "col": 2,
+      "queue_id": null,
+      "cx": 610,
+      "cy": 1108
+    },
+    {
+      "zone": "main_board",
+      "row": 5,
+      "col": 3,
+      "queue_id": null,
+      "cx": 761,
+      "cy": 1108
+    },
+    {
+      "zone": "main_board",
+      "row": 5,
       "col": 4,
       "queue_id": null,
-      "cx": 912,
-      "cy": 1200
+      "cx": 837,
+      "cy": 1108
     },
     {
       "zone": "main_board",
-      "row": 4,
+      "row": 5,
       "col": 5,
       "queue_id": null,
+      "cx": 912,
+      "cy": 1108
+    },
+    {
+      "zone": "main_board",
+      "row": 6,
+      "col": 0,
+      "queue_id": null,
+      "cx": 155,
+      "cy": 1188
+    },
+    {
+      "zone": "main_board",
+      "row": 6,
+      "col": 1,
+      "queue_id": null,
+      "cx": 231,
+      "cy": 1188
+    },
+    {
+      "zone": "main_board",
+      "row": 6,
+      "col": 2,
+      "queue_id": null,
+      "cx": 307,
+      "cy": 1188
+    },
+    {
+      "zone": "main_board",
+      "row": 6,
+      "col": 3,
+      "queue_id": null,
+      "cx": 458,
+      "cy": 1188
+    },
+    {
+      "zone": "main_board",
+      "row": 6,
+      "col": 4,
+      "queue_id": null,
+      "cx": 534,
+      "cy": 1188
+    },
+    {
+      "zone": "main_board",
+      "row": 6,
+      "col": 5,
+      "queue_id": null,
+      "cx": 685,
+      "cy": 1188
+    },
+    {
+      "zone": "main_board",
+      "row": 6,
+      "col": 6,
+      "queue_id": null,
+      "cx": 761,
+      "cy": 1188
+    },
+    {
+      "zone": "main_board",
+      "row": 6,
+      "col": 7,
+      "queue_id": null,
+      "cx": 912,
+      "cy": 1188
+    },
+    {
+      "zone": "main_board",
+      "row": 6,
+      "col": 8,
+      "queue_id": null,
+      "cx": 988,
+      "cy": 1188
+    },
+    {
+      "zone": "main_board",
+      "row": 6,
+      "col": 9,
+      "queue_id": null,
       "cx": 1064,
-      "cy": 1200
+      "cy": 1188
     },
     {
       "zone": "queue",
