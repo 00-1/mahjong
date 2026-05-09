@@ -83,6 +83,28 @@ def decide(state_path: Path, image_size: tuple[int, int], label_fn=None) -> dict
 
     best = moves[0]
     bbox = _location_to_bbox(state, best.location)
+
+    # If the top move is part of a triplet that's fully tappable now (all
+    # locations in plans[0].tap_locations are visible top tiles), include
+    # the full sequence so the agent can blast all taps without re-snapping.
+    triplet_sequence = None
+    if plans and best.score >= 8:
+        top_plan = plans[0]
+        if top_plan.tile_id == best.tile_id:
+            seq = []
+            for loc in top_plan.tap_locations:
+                lb = _location_to_bbox(state, loc)
+                if lb is None:
+                    seq = None
+                    break
+                seq.append({
+                    "x": lb[0] + lb[2] // 2,
+                    "y": lb[1] + lb[3] // 2,
+                    "location": loc,
+                })
+            if seq:
+                triplet_sequence = seq
+
     if bbox is None:
         return {
             "should_stop": True,
@@ -127,6 +149,7 @@ def decide(state_path: Path, image_size: tuple[int, int], label_fn=None) -> dict
         "score": round(best.score, 3),
         "reason": best.reason,
         "alternatives": alternatives,
+        "triplet_sequence": triplet_sequence,
         "state": _state_summary(state, label_fn),
         "image_size": {"w": image_size[0], "h": image_size[1]},
     }
