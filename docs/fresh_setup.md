@@ -151,6 +151,62 @@ cleanly. The vision pipeline itself (HSV thresholds, pHash matching)
 is resolution-agnostic; only the cached per-level anchor coordinates
 are not.
 
+## Lose-state recovery in the puzzle
+
+When the tray fills without a triplet, PNC shows a **"Tip" modal**
+overlaying the puzzle: *"Use Discard or Withdraw to continue the
+challenge"* with two buttons:
+
+- **OK** (left) — closes the dialog but leaves the puzzle in the same
+  stuck state; you can't make further taps. There is no recovery from
+  here other than backing all the way out, re-entering, and Continue
+  resumes you in the same stuck state again.
+- **Discard** (right) — actually advances. It triggers an immediate
+  **LOSE** screen with **BACK** + **Challenge Again** buttons.
+  Tapping Challenge Again restarts the level fresh (consumes 1 of the
+  10/10 challenge tickets shown on the lose screen).
+
+So the autonomous recovery loop is:
+```
+... autoplay returns abandoned/loss heuristic ...
+tap Discard -> LOSE screen -> tap Challenge Again -> fresh level
+-> autoplay again
+```
+
+Note that `autoplay.py`'s `stop_by_heuristic` with
+`outcome=won, last_state_size=0` is **not reliable** — it triggers
+when the puzzle screen is occluded by ANY popup (including the loss
+"Tip" modal), not only by a true level-cleared transition. Treat that
+heuristic as "puzzle screen has gone away, don't know why" and snap
+to confirm.
+
+## Coordinate-reading caveat (small-image perception is off)
+
+When using a 1/3-scale JPEG snap to look at the screen, the visual
+y-position of UI elements **does not** linearly map to phone-y at the
+expected 3× ratio. Bottom-of-screen buttons in particular appear
+visually lower in the small image than they actually are on the
+phone. Reason unclear (likely Read-tool image-rescaling artifact).
+
+Workaround: when a tap on a button you can see in the snap fails,
+**don't keep nudging by ±50 px**. Instead, find the button's true
+position in the full-resolution PNG via cv2 — e.g. for a yellow CTA
+button:
+
+```python
+import cv2, numpy as np
+img = cv2.imread('shot.png')
+hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+mask = cv2.inRange(hsv, np.array([15,100,100]), np.array([40,255,255]))
+ys, xs = np.where(mask > 0)  # gives true full-res y range
+```
+
+Then tap at those full-res coordinates, not at small_y × 3.
+
+Concrete instance: the **Challenge Again** button on the lose screen
+read as small y≈770 (suggesting phone y≈2310), but its actual full-res
+position was y=1948 — taps at 2310 / 2340 missed entirely.
+
 ## What this session set up
 
 - gh authed as `00-1`

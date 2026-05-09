@@ -174,7 +174,9 @@
       "label": "red_flower",
       "samples": [
         "tiles/samples/tile_015_00.jpg",
-        "tiles/samples/tile_015_01.jpg"
+        "tiles/samples/tile_015_01.jpg",
+        "tiles/samples/tile_015_02.jpg",
+        "tiles/samples/tile_015_03.jpg"
       ],
       "first_seen": "data/screenshots/level_08/run_01_mid.jpg"
     },
