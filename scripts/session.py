@@ -43,7 +43,11 @@ def run_autoplay(level: int, args, *, attempt: int) -> dict:
     cmd = [sys.executable, str(ROOT / "scripts" / "autoplay.py"), "--level", str(level)]
     for opt in ("--device", "--max-steps", "--min-wait", "--max-wait",
                 "--triplet-extra-wait", "--max-tap-retries",
-                "--lookahead-depth", "--shot-dir"):
+                "--lookahead-depth", "--shot-dir",
+                "--surrender-threshold", "--surrender-step-floor",
+                "--surrender-min-main-board", "--surrender-sparse-grace",
+                "--burst-stability-window",
+                "--occult-confidence-threshold", "--posterior-min-confidence"):
         val = getattr(args, opt[2:].replace("-", "_"), None)
         if val is not None:
             cmd.extend([opt, str(val)])
@@ -103,6 +107,22 @@ def main() -> int:
                    help="Forwarded to autoplay.")
     p.add_argument("--shot-dir", type=str, default=None,
                    help="Forwarded to autoplay (use writable dir on Termux).")
+    # Forwarded autoplay-only flags. Default None means "let autoplay's
+    # default apply"; caller can override at the session level if needed.
+    p.add_argument("--surrender-threshold", type=float, default=None,
+                   help="Forwarded to autoplay.")
+    p.add_argument("--surrender-step-floor", type=int, default=None,
+                   help="Forwarded to autoplay.")
+    p.add_argument("--surrender-min-main-board", type=int, default=None,
+                   help="Forwarded to autoplay.")
+    p.add_argument("--surrender-sparse-grace", type=int, default=None,
+                   help="Forwarded to autoplay.")
+    p.add_argument("--burst-stability-window", type=float, default=None,
+                   help="Forwarded to autoplay.")
+    p.add_argument("--occult-confidence-threshold", type=float, default=None,
+                   help="Forwarded to autoplay.")
+    p.add_argument("--posterior-min-confidence", type=float, default=None,
+                   help="Forwarded to autoplay.")
     args = p.parse_args()
 
     session_started = time.time()
