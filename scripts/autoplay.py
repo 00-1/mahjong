@@ -44,6 +44,7 @@ import cv2  # noqa: E402
 from src.agent.decide import decide as decide_fn
 from src.agent.run import end_run, next_step_number, record_step, save_meta, start_run
 from src.agent.stats import integrate_run
+from src.agent.verify import verify_tap, verify_triplet_burst
 
 
 ADB_TIMEOUT = 15
@@ -72,6 +73,29 @@ def adb_tap(device_arg: list[str], x: int, y: int) -> bool:
         return r.returncode == 0
     except subprocess.TimeoutExpired:
         return False
+
+
+def _snap_and_extract(device_arg: list[str], args, step_id) -> dict | None:
+    """Helper: take a screenshot, run extract_board, return state dict.
+    Used for verification snaps that don't go through the full step logging."""
+    shot_path = args.shot_dir / f"verify_{step_id}.png"
+    if not adb_screencap(device_arg, shot_path):
+        return None
+    extract = subprocess.run(
+        [sys.executable, str(ROOT / "scripts" / "extract_board.py"),
+         str(shot_path), "--level", str(args.level)],
+        capture_output=True, text=True,
+    )
+    if extract.returncode != 0:
+        return None
+    state_path = (
+        ROOT / "data" / "extractions" / f"level_{args.level:02d}"
+        / shot_path.stem / "state.json"
+    )
+    if not state_path.exists():
+        return None
+    with open(state_path) as f:
+        return json.load(f)
 
 
 def adb_check_device(device_arg: list[str]) -> str | None:
@@ -108,6 +132,10 @@ def main() -> int:
     p.add_argument("--no-stats", action="store_true")
     p.add_argument("--verbose", action="store_true")
     p.add_argument("--tiles-dir", type=Path, default=ROOT / "data" / "tiles")
+    p.add_argument("--no-verify", action="store_true",
+                   help="Skip post-tap verification (faster, but won't detect missed taps)")
+    p.add_argument("--max-tap-retries", type=int, default=2,
+                   help="On a missed tap, retry this many times with small offset before giving up")
     args = p.parse_args()
 
     device_arg = ["-s", args.device] if args.device else []
@@ -130,7 +158,9 @@ def main() -> int:
     step = 0
     final_status = "abandoned"
     consecutive_not_a_puzzle = 0
+    consecutive_missed_taps = 0
     last_decision = None
+    last_state = None
 
     try:
         while step < args.max_steps:
@@ -231,14 +261,30 @@ def main() -> int:
                     if not adb_tap(device_arg, t["x"], t["y"]):
                         burst_ok = False
                         break
-                    time.sleep(0.4)  # short per-tap delay; game queues taps
+                    time.sleep(0.4)
                 if not burst_ok:
                     print(json.dumps({"event": "error", "step": step, "msg": "burst tap failed"}))
                     final_status = "abandoned"
                     break
-                # After the full triplet, wait longer for the auto-clear animation
                 time.sleep(args.triplet_settle)
+                # Verify the burst actually cleared the triplet
+                if not args.no_verify:
+                    after_state = _snap_and_extract(device_arg, args, step + 0.5)
+                    if after_state is not None:
+                        v = verify_triplet_burst(
+                            state_dict, after_state,
+                            [t["location"] for t in triplet_seq],
+                            decision["tile_id"],
+                        )
+                        print(json.dumps({"event": "verify_burst", "step": step,
+                                          "success": v.success, "reason": v.reason,
+                                          "notes": v.notes}))
+                        if not v.success:
+                            consecutive_missed_taps += 1
+                        else:
+                            consecutive_missed_taps = 0
                 step += 1
+                last_state = state_dict
                 continue
 
             tap = decision.get("tap")
@@ -247,19 +293,63 @@ def main() -> int:
                 break
 
             x, y = tap["x"], tap["y"]
-            print(json.dumps({
-                "event": "tap", "step": step,
-                "x": x, "y": y, "loc": tap.get("location"),
-                "tile": decision.get("label"), "reason": reason,
-                "score": decision.get("score"),
-            }))
-            if not adb_tap(device_arg, x, y):
-                print(json.dumps({"event": "error", "step": step, "msg": "tap failed"}))
-                final_status = "abandoned"
+            tap_attempts = 0
+            tap_success = False
+            current_x, current_y = x, y
+            tap_retry_offsets = [(0, 0), (0, -8), (0, 8), (-8, 0), (8, 0)]
+
+            while tap_attempts <= args.max_tap_retries:
+                tap_x = x + tap_retry_offsets[tap_attempts][0]
+                tap_y = y + tap_retry_offsets[tap_attempts][1]
+                print(json.dumps({
+                    "event": "tap", "step": step,
+                    "x": tap_x, "y": tap_y, "loc": tap.get("location"),
+                    "tile": decision.get("label"), "reason": reason,
+                    "score": decision.get("score"),
+                    "attempt": tap_attempts + 1,
+                }))
+                if not adb_tap(device_arg, tap_x, tap_y):
+                    print(json.dumps({"event": "error", "step": step, "msg": "tap failed"}))
+                    final_status = "abandoned"
+                    break
+
+                settle = args.triplet_settle if reason in TRIPLET_REASONS else args.tap_settle
+                time.sleep(settle)
+
+                if args.no_verify:
+                    tap_success = True
+                    break
+
+                # Verify
+                after_state = _snap_and_extract(device_arg, args, step + 0.5)
+                if after_state is None:
+                    tap_success = True
+                    break
+                v = verify_tap(state_dict, after_state,
+                               tap.get("location", ""), decision.get("tile_id", ""))
+                print(json.dumps({"event": "verify", "step": step,
+                                  "success": v.success, "reason": v.reason,
+                                  "notes": v.notes, "attempt": tap_attempts + 1}))
+                if v.success:
+                    tap_success = True
+                    consecutive_missed_taps = 0
+                    break
+                # Tap missed — retry with offset
+                tap_attempts += 1
+
+            if not tap_success and final_status != "abandoned":
+                consecutive_missed_taps += 1
+                print(json.dumps({"event": "tap_miss_unrecoverable", "step": step,
+                                  "consecutive_misses": consecutive_missed_taps}))
+                if consecutive_missed_taps >= 3:
+                    print(json.dumps({"event": "stop", "msg": "3 consecutive missed taps — abandoning"}))
+                    final_status = "abandoned"
+                    break
+
+            if final_status == "abandoned":
                 break
 
-            settle = args.triplet_settle if reason in TRIPLET_REASONS else args.tap_settle
-            time.sleep(settle)
+            last_state = state_dict
             step += 1
 
         else:

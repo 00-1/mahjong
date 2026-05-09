@@ -22,7 +22,66 @@ Reference screenshots with annotations are in `docs/navigation/`. See
 assumes the agent has reached the gameplay screen (Level N visible at
 top, tiles laid out).
 
-## Loop overview
+## Recommended: use `autoplay.py` (no LLM in inner loop)
+
+For speed, the entire play loop is now a Python script that runs natively
+on the agent's host. The LLM only needs to navigate to the gameplay
+screen and launch:
+
+```
+python scripts/autoplay.py --level 8
+```
+
+`autoplay.py` then:
+- Takes screenshots via `adb exec-out screencap`
+- Runs the solver (`extract_board.py` + `decide`)
+- Taps via `adb shell input tap`
+- Verifies each tap actually had its expected effect (state changed at
+  the tapped position)
+- Retries with small coord offsets if a tap missed
+- Bursts triplet sequences (3 taps in a row) without re-snapping
+- Sleeps for animations (configurable per-tap and per-triplet settle)
+- Logs every step under `data/runs/<run_id>/`
+- Exits with status: 0=won, 1=lost, 2=abandoned, 3=setup error
+
+Key flags:
+
+| Flag | Default | Purpose |
+|---|---|---|
+| `--level N` | required | Which level the script should drive |
+| `--device SERIAL` | auto | adb device serial (only needed if multiple) |
+| `--max-steps N` | 200 | Bail after N steps to prevent infinite loops |
+| `--tap-settle SEC` | 1.5 | Wait after each non-triplet tap |
+| `--triplet-settle SEC` | 2.5 | Wait after a triplet-completing tap (clear animation) |
+| `--no-verify` | off | Skip post-tap verification (faster but riskier) |
+| `--max-tap-retries N` | 2 | If a tap misses, retry with small offset up to N times |
+| `--keep-screenshots` | off | Save the screenshot of every step under the run dir |
+| `--verbose` | off | Per-step JSON log of decisions |
+
+### Tap verification
+
+After each tap, autoplay re-snapshots and checks:
+- For a single tap: did the tile at the tapped position change (vanish or
+  reveal a depth-2 tile)?
+- For a triplet burst: did all 3 positions change AND did the tray
+  auto-clear the triplet?
+
+If verification fails, autoplay retries with a small pixel offset (±8 in
+each direction) before giving up. After 3 consecutive missed taps the
+run is abandoned (probably an unrecoverable scroll / popup state).
+
+### LLM agent's role
+
+The LLM agent only handles:
+1. Environment setup (adb, Termux deps, keepalive)
+2. Navigation from home → gameplay screen (per `docs/navigation/`)
+3. Launching `autoplay.py`
+4. Between levels: handling level-complete popups, level-list scrolling,
+   choosing the next level to attempt
+
+For the play loop itself, no LLM context cycles per move.
+
+## Loop overview (lower-level, when autoplay isn't usable)
 
 ```
 1. agent.py start-run --level N             -> outputs {"run_id": "..."}
