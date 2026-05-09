@@ -547,25 +547,57 @@ def main() -> int:
             if decision.get("should_stop"):
                 if reason == "UNRECOVERABLE":
                     # Lookahead says every continuation within depth ends
-                    # in loss. Don't keep tapping into game-over; let
-                    # session.py invoke restart sooner.
-                    final_status = "lost"
-                    final_reason = "unrecoverable"
-                    log.emit("unrecoverable", step=step,
+                    # in loss. Surrendering cleanly here would leave the
+                    # screen mid-game (no Tip modal yet), which restart.py
+                    # can't recover from. Instead, keep tapping the
+                    # least-bad move until tray naturally hits 7 and the
+                    # modal pops — then session.py's restart flow works.
+                    log.emit("unrecoverable_play_to_modal", step=step,
                              lookahead_value=decision.get("lookahead_expected_value"),
                              reason=decision.get("reason", ""))
-                    break
+                    if decision.get("tap"):
+                        # Override should_stop and fall through to the
+                        # single-tap path. The decision still has the
+                        # least-bad tap from the lookahead's pick.
+                        decision["should_stop"] = False
+                    else:
+                        # No fallback move available — bail.
+                        final_status = "lost"
+                        final_reason = "unrecoverable_no_tap"
+                        break
                 if reason == "GAME_OVER":
                     # GAME_OVER at step 0 means we landed on a stale lose-state
-                    # screen (restart didn't reset the puzzle). Don't count it
-                    # as a played loss — return abandoned so session.py treats
-                    # it as a setup issue rather than burning a consecutive-loss.
+                    # screen (e.g. previous attempt's tray=7 leaked through).
+                    # The "Use Discard or Withdraw" modal isn't visible until
+                    # a tile is tapped — so tap one to surface it, then mark
+                    # lost so session.py invokes restart.py and the modal
+                    # gets dismissed normally.
                     if step == 0:
-                        final_status = "abandoned"
-                        final_reason = "game_over_at_start"
-                        log.emit("game_over_at_start", step=step,
-                                 msg="screen was already game-over at run start; "
-                                     "restart probably landed on stale lose screen")
+                        triggered = False
+                        main = state_dict.get("main_board", [])
+                        visible_main = [c for c in main if c.get("tile_id")]
+                        if visible_main:
+                            c = visible_main[0]
+                            bb = c.get("bbox") or (0, 0, 0, 0)
+                            tx = int(bb[0] + bb[2] // 2)
+                            ty = int(bb[1] + bb[3] // 2)
+                            log.emit("game_over_force_modal", step=step,
+                                     loc=(c.get("row"), c.get("col")),
+                                     x=tx, y=ty)
+                            if adb_tap(device_arg, tx, ty):
+                                # Wait for the "Use Discard or Withdraw"
+                                # modal animation
+                                time.sleep(1.5)
+                                triggered = True
+                        if triggered:
+                            final_status = "lost"
+                            final_reason = "game_over_at_start_modal_triggered"
+                        else:
+                            # No tile to tap — can't surface the modal.
+                            # Abandon so session.py escalates.
+                            final_status = "abandoned"
+                            final_reason = "game_over_at_start_no_tiles"
+                            log.emit("game_over_at_start_unrecoverable", step=step)
                     else:
                         final_status = "lost"
                         final_reason = "game_over"

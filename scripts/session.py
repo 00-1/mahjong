@@ -73,7 +73,26 @@ def run_autoplay(level: int, args, *, attempt: int) -> dict:
     duration = round(time.time() - start_ts, 1)
     rc = proc.returncode
     status = {0: "won", 1: "lost", 2: "abandoned", 3: "setup_error"}.get(rc, "unknown")
-    return {"level": level, "attempt": attempt, "status": status,
+    # Find the most recent run dir for this level to read its outcome.json
+    # — gives us the autoplay's `reason` (e.g. "game_over_at_start_modal_triggered")
+    # which informs the post-attempt recovery decision.
+    reason = None
+    runs_dir = ROOT / "data" / "runs"
+    if runs_dir.exists():
+        candidates = sorted(
+            (d for d in runs_dir.iterdir()
+             if d.is_dir() and d.name.endswith(f"_l{level:02d}")),
+            key=lambda d: d.stat().st_mtime,
+            reverse=True,
+        )
+        if candidates:
+            outcome_path = candidates[0] / "outcome.json"
+            if outcome_path.exists():
+                try:
+                    reason = json.loads(outcome_path.read_text()).get("notes")
+                except Exception:
+                    pass
+    return {"level": level, "attempt": attempt, "status": status, "reason": reason,
             "rc": rc, "duration_sec": duration}
 
 
@@ -177,11 +196,24 @@ def main() -> int:
                                              "broken extract; halting for LLM inspection"}))
                     return 1
             if attempt < args.max_attempts:
-                # Only invoke restart.py after an actual loss — abandoned
-                # attempts may have left the screen mid-game (no modal to
-                # dismiss), so restart taps would land on random tiles.
-                if result["status"] == "lost" and (ROOT / "data" / "restart_config.json").exists():
-                    print(json.dumps({"event": "restart_run", "between_attempts": True}))
+                # Invoke restart.py when:
+                # - Prior attempt was actually lost (modal already up), OR
+                # - Prior attempt abandoned with a reason indicating the
+                #   screen IS in a recoverable lose-state (e.g.
+                #   game_over_at_start*: tray=7 visible but modal not yet
+                #   triggered — autoplay tries to surface it before exiting,
+                #   but if that fallback fails we still want to attempt
+                #   restart.py).
+                reason = result.get("reason") or ""
+                should_restart = (
+                    result["status"] == "lost"
+                    or (result["status"] == "abandoned"
+                        and reason.startswith("game_over_at_start"))
+                )
+                if should_restart and (ROOT / "data" / "restart_config.json").exists():
+                    print(json.dumps({"event": "restart_run", "between_attempts": True,
+                                      "prior_status": result["status"],
+                                      "prior_reason": reason}))
                     rc = subprocess.run([
                         sys.executable, str(ROOT / "scripts" / "restart.py"),
                         "--level", str(level),
@@ -192,12 +224,15 @@ def main() -> int:
                                           "msg": "falling back to fixed sleep"}))
                         time.sleep(args.inter_attempt_pause)
                 else:
-                    why = ("post-loss restart not configured" if result["status"] == "lost"
-                           else "prior attempt abandoned — no modal to dismiss; "
+                    why = ("post-loss restart not configured"
+                           if result["status"] == "lost"
+                           else f"prior attempt abandoned (reason={reason}); "
+                                "no modal-recovery path applies; "
                                 "agent should inspect screen before next attempt")
                     print(json.dumps({"event": "pause_between_attempts",
                                       "seconds": args.inter_attempt_pause,
                                       "prior_status": result["status"],
+                                      "prior_reason": reason,
                                       "msg": why}))
                     time.sleep(args.inter_attempt_pause)
         if won_this_level:

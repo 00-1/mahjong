@@ -169,6 +169,19 @@ def decide(
     if (allow_surrender
             and lookahead_used and lookahead_expected_value is not None
             and lookahead_expected_value <= surrender_threshold):
+        # Include the lookahead's least-bad tap as a fallback. autoplay
+        # uses it to keep playing into the natural game-over modal so
+        # restart.py can recover (instead of stopping clean and
+        # leaving the screen mid-game where restart can't dismiss
+        # anything).
+        bbox_un = _location_to_bbox(state, best.location)
+        tap_un = None
+        if bbox_un is not None:
+            tap_un = {
+                "x": bbox_un[0] + bbox_un[2] // 2,
+                "y": bbox_un[1] + bbox_un[3] // 2,
+                "location": best.location,
+            }
         return {
             "should_stop": True,
             "reason_code": "UNRECOVERABLE",
@@ -180,6 +193,9 @@ def decide(
             "lookahead_used": True,
             "lookahead_expected_value": round(lookahead_expected_value, 3),
             "score": round(best.score, 3),
+            "tap": tap_un,
+            "tile_id": best.tile_id if tap_un else None,
+            "label": label_fn(best.tile_id) if tap_un else None,
             "state": _state_summary(state, label_fn),
         }
 
