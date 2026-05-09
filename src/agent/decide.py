@@ -36,6 +36,21 @@ def decide(state_path: Path, image_size: tuple[int, int], label_fn=None) -> dict
     moves = suggest_moves(state, label_fn=label_fn)
     plans = plan_triplets(state)
 
+    # If we extracted essentially nothing, this probably isn't a puzzle screen.
+    # Tell the agent so it can navigate / dismiss popups instead of trying to play.
+    if len(state.main_board) == 0 and len(state.queues) == 0:
+        return {
+            "should_stop": True,
+            "reason_code": "NOT_A_PUZZLE",
+            "reason": (
+                "no tile faces detected in main board or queues — "
+                "screen is probably not the puzzle gameplay view "
+                "(could be a popup, level list, or load screen)"
+            ),
+            "looks_like_puzzle": False,
+            "state": _state_summary(state, label_fn),
+        }
+
     # Game-over heuristic: tray full means no taps allowed by the game,
     # even if a triplet would be completable. Game is lost.
     if tray_filled >= 7:
@@ -146,6 +161,7 @@ def _state_summary(state, label_fn) -> dict:
         "main_board_count": len(state.main_board),
         "queue_count": len(state.queues),
         "tile_counts": _count_visible(state, label_fn),
+        "looks_like_puzzle": len(state.main_board) > 0 or len(state.queues) > 0,
     }
 
 

@@ -42,6 +42,23 @@ top, tiles laid out).
 
 ## Commands
 
+### `check` (preflight)
+
+```
+python scripts/agent.py check --screenshot path.png
+```
+
+Output:
+```json
+{"looks_like_puzzle": true, "tile_faces_found": 21, "image_size": {"w": 1220, "h": 2712}}
+```
+
+Cheap and fast — detects bright tile faces only, doesn't run the full
+extraction. If `looks_like_puzzle: false`, the agent is on the wrong
+screen (popup / level list / load screen) and should navigate before
+calling `decide`. The `decide` command itself will also return
+`reason_code: NOT_A_PUZZLE` in this case, but `check` is faster.
+
 ### `start-run`
 
 ```
@@ -106,8 +123,10 @@ Output (stop signal):
 | `TRIPLET` | Tap completes (or progresses) a visible triplet | Execute the tap with high confidence |
 | `PROBABLE` | Reasonable move, no immediate triplet | Execute the tap |
 | `EXPLORE` | Speculative tap, low confidence | Execute the tap or alternatively call agent again with a different tactic |
+| `WAIT_FOR_AUTOCLEAR` | Tray contains a triplet about to clear | Sleep ~1.5 sec, re-screenshot, retry decide |
 | `GAME_OVER` | Loss state detected | End run with status=lost |
-| `NO_MOVES` | Pipeline didn't find any tappable tiles | End run with status=abandoned |
+| `NOT_A_PUZZLE` | Screenshot doesn't look like the puzzle gameplay screen | Navigate / dismiss popup, take new screenshot, retry decide |
+| `NO_MOVES` | Pipeline ran but found no tappable tiles | Treat as `NOT_A_PUZZLE` — likely a non-game screen |
 | `EXTRACTION_FAILED` | Image processing crashed | Retry, or end run with status=abandoned |
 | `STATE_MISSING` | State JSON wasn't created | As above |
 | `NO_MAPPING` | Internal: couldn't map suggested location to pixel coords | End run with status=abandoned |

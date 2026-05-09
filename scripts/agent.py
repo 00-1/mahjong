@@ -167,5 +167,36 @@ def status_cmd(run_id: str) -> None:
     print(json.dumps(asdict(meta), indent=2))
 
 
+@cli.command("check")
+@click.option("--screenshot", type=click.Path(exists=True, dir_okay=False, path_type=Path), required=True)
+def check_cmd(screenshot: Path) -> None:
+    """Pre-flight: tell the agent whether a screenshot looks like a puzzle
+    gameplay screen, without running the full extraction pipeline.
+
+    Quick path: detect bright tile faces. If we find >= 6 cream tile-shaped
+    regions in the play area, this is almost certainly a puzzle screen.
+    Otherwise it's probably a menu / popup / level list.
+
+    Output JSON:
+      {"looks_like_puzzle": bool, "tile_faces_found": int, "image_size": {...}}
+    """
+    import cv2
+    sys.path.insert(0, str(ROOT))
+    from src.vision.detect import DetectConfig, detect_tile_faces
+
+    bgr = cv2.imread(str(screenshot))
+    if bgr is None:
+        print(json.dumps({"looks_like_puzzle": False, "error": "could not read image"}))
+        sys.exit(1)
+    h, w = bgr.shape[:2]
+    faces = detect_tile_faces(bgr, DetectConfig())
+    looks_like = len(faces) >= 6
+    print(json.dumps({
+        "looks_like_puzzle": looks_like,
+        "tile_faces_found": len(faces),
+        "image_size": {"w": w, "h": h},
+    }))
+
+
 if __name__ == "__main__":
     cli()
