@@ -207,6 +207,34 @@ Concrete instance: the **Challenge Again** button on the lose screen
 read as small y≈770 (suggesting phone y≈2310), but its actual full-res
 position was y=1948 — taps at 2310 / 2340 missed entirely.
 
+## Open — restart leaves screen in unrecoverable state
+
+After the 5aca586 fixes (post-pull session 9), session.py ran 4
+attempts at L8:
+
+- Run 1: 27 steps → `lost / unrecoverable` (new surrender threshold).
+  Runs cleanly to surrender — that part is working.
+- Runs 2-3: 0 steps → `lost / unrecoverable` *immediately*.
+- Run 4: 4 steps → `abandoned / 5x_not_a_puzzle` with
+  `pre_npz_main=0, pre_npz_tray=0`.
+
+Diagnosis: `restart.py` reports `restart_ok` between attempts (Discard
++ Challenge Again taps land on the right buttons), but the screen the
+*next* autoplay snaps is not a fresh puzzle — looks like one of:
+- LOSE screen still visible (Challenge Again tap missed or the
+  fresh-puzzle wait is too short)
+- Mid-load fade where extract finds 0 tiles
+
+`restart.py`'s `looks_like_fresh_puzzle` check requires
+`main_count >= 6` AND `tray_filled == 0`. Worth widening the
+post-Challenge-Again poll window, or tightening the "fresh" check to
+also require absence of LOSE-screen yellow CTAs.
+
+Other thing to investigate: 0-step `unrecoverable` shouldn't be
+reachable — surrender requires lookahead to evaluate; maybe the new
+`UNRECOVERABLE` reason code is firing before any move is made when
+the board is empty/odd. Check `decide.py` for the early-exit path.
+
 ## (Fixed) Two AttributeError sources during triplet bursts
 
 Both surfaced as `'str' object has no attribute 'get'`. Added a

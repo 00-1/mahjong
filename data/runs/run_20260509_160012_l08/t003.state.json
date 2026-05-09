@@ -1,0 +1,16 @@
+{
+  "level": 8,
+  "image": "/data/data/com.termux/files/home/snaps/autoplay/autoplay_run_20260509_160012_l08_002_retry.png",
+  "image_size": [
+    2400,
+    1080
+  ],
+  "main_board": [],
+  "queues": [],
+  "tray": [],
+  "boost_counts": {
+    "withdraw": 0,
+    "retreat": 0,
+    "refresh": 0
+  }
+}

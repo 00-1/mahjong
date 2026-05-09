@@ -1,0 +1,19 @@
+{
+  "should_stop": true,
+  "reason_code": "NOT_A_PUZZLE",
+  "reason": "no tile faces detected in main board or queues \u2014 screen is probably not the puzzle gameplay view (could be a popup, level list, or load screen)",
+  "looks_like_puzzle": false,
+  "state": {
+    "level": 8,
+    "image_size": [
+      2400,
+      1080
+    ],
+    "tray_filled": 0,
+    "tray": [],
+    "main_board_count": 0,
+    "queue_count": 0,
+    "tile_counts": {},
+    "looks_like_puzzle": false
+  }
+}

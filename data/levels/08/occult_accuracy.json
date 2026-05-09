@@ -1,18 +1,18 @@
 {
   "level": 8,
-  "total": 37,
+  "total": 49,
   "correct": 3,
   "by_predicted": {
     "tile_005": {
-      "total": 7,
+      "total": 8,
       "correct": 2
     },
     "tile_011": {
-      "total": 3,
+      "total": 4,
       "correct": 0
     },
     "tile_002": {
-      "total": 3,
+      "total": 4,
       "correct": 0
     },
     "tile_009": {
@@ -36,11 +36,11 @@
       "correct": 0
     },
     "tile_003": {
-      "total": 4,
+      "total": 5,
       "correct": 0
     },
     "tile_001": {
-      "total": 1,
+      "total": 3,
       "correct": 0
     },
     "tile_014": {
@@ -48,13 +48,13 @@
       "correct": 0
     },
     "tile_018": {
-      "total": 2,
+      "total": 8,
       "correct": 0
     }
   },
   "by_actual": {
     "tile_011": {
-      "total": 2,
+      "total": 3,
       "correct": 0
     },
     "tile_012": {
@@ -66,7 +66,7 @@
       "correct": 0
     },
     "tile_013": {
-      "total": 5,
+      "total": 7,
       "correct": 0
     },
     "tile_006": {
@@ -74,23 +74,23 @@
       "correct": 0
     },
     "tile_003": {
-      "total": 5,
+      "total": 6,
       "correct": 0
     },
     "tile_008": {
-      "total": 3,
+      "total": 4,
       "correct": 0
     },
     "tile_007": {
-      "total": 2,
+      "total": 3,
       "correct": 0
     },
     "tile_004": {
-      "total": 2,
+      "total": 6,
       "correct": 0
     },
     "tile_005": {
-      "total": 3,
+      "total": 5,
       "correct": 2
     },
     "tile_010": {
@@ -134,19 +134,28 @@
     "tile_006->tile_003": 1,
     "tile_006->tile_013": 1,
     "tile_014->tile_001": 1,
-    "tile_018->tile_005": 1,
-    "tile_018->tile_008": 1
+    "tile_018->tile_005": 2,
+    "tile_018->tile_008": 1,
+    "tile_001->tile_011": 1,
+    "tile_003->tile_004": 1,
+    "tile_005->tile_008": 1,
+    "tile_018->tile_003": 1,
+    "tile_018->tile_013": 2,
+    "tile_018->tile_004": 2,
+    "tile_002->tile_007": 1,
+    "tile_011->tile_004": 1,
+    "tile_001->tile_005": 1
   },
   "by_confidence_bucket": {
     "med": {
-      "total": 9,
+      "total": 16,
       "correct": 0,
       "accuracy": 0.0
     },
     "low": {
-      "total": 26,
+      "total": 31,
       "correct": 3,
-      "accuracy": 0.11538461538461539
+      "accuracy": 0.0967741935483871
     },
     "high": {
       "total": 2,
@@ -155,6 +164,6 @@
     }
   },
   "method_top_agrees_when_correct": 1,
-  "method_top_agrees_when_wrong": 1,
-  "accuracy": 0.08108108108108109
+  "method_top_agrees_when_wrong": 2,
+  "accuracy": 0.061224489795918366
 }
