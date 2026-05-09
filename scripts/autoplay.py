@@ -373,7 +373,7 @@ def main() -> int:
                 # Tap missed — retry with offset
                 tap_attempts += 1
 
-            if final_status == "abandoned":
+            if final_reason:
                 break
 
             if not tap_success:

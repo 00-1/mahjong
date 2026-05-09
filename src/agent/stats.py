@@ -45,7 +45,8 @@ def load_stats(levels_root: Path, level: int) -> LevelStats:
     if not p.exists():
         return LevelStats(level=level)
     data = json.loads(p.read_text())
-    return LevelStats(**data)
+    fields = {f for f in LevelStats.__dataclass_fields__}
+    return LevelStats(**{k: v for k, v in data.items() if k in fields})
 
 
 def save_stats(levels_root: Path, stats: LevelStats) -> None:
