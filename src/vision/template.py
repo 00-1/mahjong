@@ -213,6 +213,20 @@ def snap_detections(
                     target_x = a.cx + ox
                     target_y = a.cy + oy
                     dist = ((d.cx - target_x) ** 2 + (d.cy - target_y) ** 2) ** 0.5
+                    # Strong tiebreaker: prefer direct (depth-1) matches over
+                    # depth-2 offset matches when distances are similar. After
+                    # the template rebuild added between-column anchors, the
+                    # adjacent-anchor spacing (~67px) matched the depth-offset
+                    # magnitude (~66px) — so a detection between two anchors
+                    # ties between (anchor_A, offset=(0,0)) and (anchor_B,
+                    # offset=(±66, 0)). Without the bias, the offset match
+                    # would sometimes win, mislabelling a fully-visible tile
+                    # as "d2 of a neighbour". Penalty of 30 reliably resolves
+                    # the tie in favour of the direct match while still
+                    # allowing a true d2-peek to match if no d1 anchor is
+                    # closer.
+                    if (ox, oy) != (0, 0):
+                        dist += 30.0
                     if dist <= main_max_distance:
                         candidates.append((dist, di, ai, (ox, oy)))
             elif a.zone == "tray":
