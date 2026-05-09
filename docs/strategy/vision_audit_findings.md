@@ -280,3 +280,79 @@ isn't broken — there's just no signal.
 - Strict per-anchor confidence thresholding for Bayesian
   predictions would help when more data lands. Right now sample
   size is too small to set per-anchor cutoffs reliably.
+
+## Round 4-5 — anchor priors rebuild + forward-simulation finding
+
+### Anchor priors data integrity [FIXED]
+Discovered that `anchor_priors.json` had mixed (row, col) keys
+across template versions. After the template rebuild, old labels
+pointed to different physical positions. Built
+`scripts/rebuild_anchor_priors.py` and rebuilt from all 146 saved
+puzzle screenshots using current template:
+- 30 anchors with priors (was 21)
+- 1718 total observations
+- Several strong d2 patterns appear:
+  - (6,5) tile_012: 100% (25 obs) — perfectly deterministic
+  - (6,7) tile_009: 100% (6 obs) — small sample but consistent
+  - (5,4) tile_002: 96% (25 obs)
+  - (3,5) tile_004: 86% (14 obs)
+  - (6,6) tile_008: 69% (48 obs)
+  - (2,3) tile_006: 52% (42 obs)
+
+Combined with the per-anchor filter, the Bayesian predictor now
+emits 11 high-confidence predictions on a typical mid-game state
+— vs 18 mostly-noise before, or 8 after rebuild without the
+filter alone.
+
+### Forward simulation reveals depth-3 limit
+Tested: load the saved start of run_20260509_165854_l08, let the
+planner play it forward picking each step's lookahead-recommended
+move. With depth=3 + Bayesian-MAP reveals + per-anchor filter:
+- 3 triplets cleared, lost at step 15.
+
+The simulator is pessimistic about random anchors — when no
+high-confidence prediction exists, the position becomes empty
+in simulation rather than "something unknown is here". So the
+lookahead can't plan reveal-cascades for low-confidence anchors.
+
+This is the genuine ceiling of heuristic search on the current
+game state. Pushing past it requires:
+- Deeper search (depth=5 at branching factor ~18 takes minutes)
+- MCTS with sampled determinizations (matches the
+  `optimal_solver_plan.md` recommendation)
+- A more sophisticated reveal model that doesn't degenerate to
+  empty positions for random-prior anchors
+
+### What we know vs what's left
+
+KNOWN-WORKING (validated):
+- Vision: detection 99.76%, tile-id match 96% within threshold,
+  0 mismatches at tap targets.
+- Strategy at depth=3 with current heuristic: identifies recoverable
+  vs terminal states correctly, picks reasonable moves in EXPLORE,
+  surrenders at the right step.
+- Diagnostics: every tap logged with intended-vs-actual; runs
+  stamped with git SHA + library version; unmatched_positions
+  auto-written when template gaps appear.
+- Rebuild tooling: `rebuild_anchor_priors.py` keeps priors aligned
+  with template changes.
+
+KNOWN-LIMITS:
+- Depth=3 lookahead can't see beyond ~3 taps of consequence,
+  loses to tray-fill when triplet completion requires a 5+ tap
+  unblock sequence.
+- d2 placement in this game is genuinely random for most anchors
+  (per the empirical 6.2% accuracy at random baseline).
+  No predictor will solve this without MCTS-style sampling.
+- Burst incompleteness (~28% of historical bursts) — likely
+  fixed by `--burst-stability-window=0.6` but not yet validated
+  on live data.
+
+FORWARD WORK if more iteration desired:
+- Determinized UCT: ~250 LOC, bigger lift, would push past the
+  depth-3 ceiling.
+- Probabilistic simulator: replace "no reveal" with sampled-from-prior
+  reveal in low-confidence anchors. Needs expectimax-style search
+  to be useful.
+- Per-anchor confidence learning: the filter is a static threshold;
+  dynamic per-anchor calibration would help once more data lands.
