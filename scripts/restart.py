@@ -41,6 +41,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from src.agent.autoplay_lib import adb_check_device, adb_screencap, adb_tap
+from src.agent.path_log import log_path_failure
 from src.vision.detect import DetectConfig, detect_tile_faces
 
 import cv2
@@ -197,6 +198,13 @@ def main() -> int:
 
     print(json.dumps({"event": "error",
                       "msg": "fresh puzzle never appeared after Challenge Again"}))
+    log_path_failure(
+        path="restart",
+        script="scripts/restart.py",
+        failure_reason="puzzle_not_visible_after_challenge_again",
+        step="puzzle_load_poll",
+        expected="puzzle", observed="non-puzzle screen",
+    )
     return 1
 
 

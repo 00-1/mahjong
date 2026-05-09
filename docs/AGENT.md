@@ -22,6 +22,28 @@ Reference screenshots with annotations are in `docs/navigation/`. See
 assumes the agent has reached the gameplay screen (Level N visible at
 top, tiles laid out).
 
+## Path library — minimize LLM in the loop
+
+We maintain `docs/path_library/` — a registry of repeatable agent
+actions and which are already scripted. **As you (the LLM agent)
+work, watch for unscripted paths**:
+
+1. When you find yourself doing something repetitive that isn't
+   already scripted, **add an entry to `docs/path_library/TODO.md`**
+   describing the path, trigger, and approach sketch.
+2. When a scripted path fails (returns `needs_llm` or unexpected
+   exit), it's auto-logged to `docs/path_library/failures.jsonl`
+   via `src/agent/path_log.py`. Periodically run
+   `scripts/review_paths.py` to surface trends — patterns of
+   failures point at scripts that need patching.
+3. When you write a new script for a path, add it to
+   `docs/path_library/INDEX.md`.
+
+This is part of the agent's job: not just running the play loop,
+but identifying and capturing repeatable behavior so future runs
+spend less LLM time. The `replay_run.py --suggest-improvements`
+output also surfaces candidates.
+
 ## Recommended: use `autoplay.py` (no LLM in inner loop)
 
 For speed, the entire play loop is now a Python script that runs natively

@@ -248,6 +248,22 @@ def main():
         for s in suggest_strategy_changes(findings):
             print(f"- {s}")
 
+        # Also surface path-library candidates: if many runs ended in
+        # 'abandoned' from setup_error or NOT_A_PUZZLE patterns, those
+        # are LLM-time-sinks worth scripting.
+        from collections import Counter
+        outcome_reasons = Counter(f.get("outcome_notes", "") for f in findings)
+        if outcome_reasons:
+            print("\n=== Path-library candidates ===")
+            print("(paths that recur across runs and might be scriptable)")
+            for reason, n in outcome_reasons.most_common(10):
+                if n >= 2:
+                    print(f"- {n} runs ended with notes='{reason}'. "
+                          f"If repeatable, add to docs/path_library/TODO.md.")
+            print()
+            print("Also check: docs/path_library/failures.jsonl — review existing")
+            print("scripted-path failures via `scripts/review_paths.py`.")
+
 
 if __name__ == "__main__":
     main()

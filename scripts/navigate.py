@@ -53,6 +53,7 @@ import cv2
 
 from src.agent.autoplay_lib import adb_check_device, adb_screencap, adb_tap
 from src.agent.navigate import detect_screen, find_continue_button
+from src.agent.path_log import log_path_failure
 
 
 CONFIG_PATH = ROOT / "data" / "navigation_config.json"
@@ -202,12 +203,18 @@ def navigate(args) -> int:
         hint_y = scale_xy((0, cfg["continue_y_hint"]), cal_res, actual_res)[1]
     button = find_continue_button(bgr, expected_y_hint=hint_y)
     if button is None:
-        # Vision couldn't unambiguously find it
         candidates = find_continue_button.__globals__["find_yellow_buttons"](bgr)
         print(json.dumps({"event": "needs_llm",
                           "step": "continue_button",
                           "msg": "ambiguous yellow buttons; LLM should disambiguate",
                           "candidates": candidates}))
+        log_path_failure(
+            path="navigate.go",
+            script="scripts/navigate.py",
+            failure_reason="ambiguous_continue_button",
+            step="continue_button",
+            extra={"candidates": candidates, "level": args.level},
+        )
         return 1
     cx, cy = button["cx"], button["cy"]
     print(json.dumps({"event": "tap", "step": "continue", "x": cx, "y": cy,
@@ -225,6 +232,14 @@ def navigate(args) -> int:
     if final_kind != "puzzle":
         print(json.dumps({"event": "needs_llm", "step": "verify",
                           "msg": f"after Continue tap, screen is '{final_kind}' not 'puzzle'"}))
+        log_path_failure(
+            path="navigate.go",
+            script="scripts/navigate.py",
+            failure_reason="post_continue_not_puzzle",
+            step="verify",
+            expected="puzzle", observed=final_kind,
+            extra={"level": args.level},
+        )
         return 1
     print(json.dumps({"event": "navigation_complete", "screen": "puzzle"}))
     return 0
