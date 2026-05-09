@@ -220,15 +220,21 @@ def snap_detections(
                 if dist <= tray_max_distance:
                     candidates.append((dist, di, ai, (0, 0)))
 
-        if queue_cy_values:
-            best_queue_cy = min(queue_cy_values, key=lambda qcy: abs(d.cy - qcy))
-            cy_dist = abs(d.cy - best_queue_cy)
-            if cy_dist <= queue_cy_tolerance:
-                target_qid = _queue_id_for(d.cx, d.cy, image_w, queue_cy_values)
-                for ai, a in enumerate(anchors):
-                    if a.zone == "queue" and a.queue_id == target_qid:
-                        candidates.append((float(cy_dist), di, ai, (0, 0)))
-                        break
+        # Queue heads: match by Euclidean distance to each queue anchor.
+        # The previous _queue_id_for heuristic guessed the queue_id from
+        # (cx, cy) using a left/right + upper/lower split — this misfires
+        # when the level layout doesn't match that 4-quadrant assumption
+        # (level 8 has 3 strips, with the "right_upper" strip actually
+        # at the centre cx=540). Direct anchor-distance is unambiguous.
+        for ai, a in enumerate(anchors):
+            if a.zone != "queue":
+                continue
+            cy_dist = abs(d.cy - a.cy)
+            cx_dist = abs(d.cx - a.cx)
+            if cy_dist <= queue_cy_tolerance and cx_dist <= queue_cy_tolerance:
+                # Use cy_dist as the cost so the linear_sum_assignment
+                # behaviour stays comparable to the old heuristic's costs.
+                candidates.append((float(cy_dist + cx_dist), di, ai, (0, 0)))
 
     UNREACHABLE = 1e6
     n_dets = len(detections)
