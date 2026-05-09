@@ -45,15 +45,19 @@ def state_value(state: BoardState) -> float:
 
     Components and rough magnitudes:
     - Win/loss terminals: ±1000
-    - Triplet realisable (>=3 of a type combined visible+tray): +5/type
-    - Near-triplet seeds (2-in-tray): +5/type — high reward, almost a clear
-    - 1-in-tray seeds: +1/type — versatile, can support future triplet
+    - Triplet realisable now (>=3 of a type combined visible+tray): +5/type
+    - Near-triplet seeds (2-in-tray): +5/type
+    - 1-in-tray seeds: +1/type
     - Orphan visible (1 visible, 0 in tray, no path to a 2nd): -3/type
+    - DEAD TRAY TILE: tile in tray with NO chance of forming a triplet
+      because total_remaining (visible + tray + level_likely_hidden)
+      is < 3. Heavy penalty per dead tile in tray (-15) — these are
+      permanent occupants of slots that can't be cleared.
     - Tray-fullness: quadratic penalty toward 7
-    - Tile-remaining: -0.5 per (encourages clearing)
+    - Tile-remaining: -2/each (encourages clearing)
     - Diversity-of-tray bonus: more distinct tile types in tray = more
       tap targets that complete a triplet. +0.5 per distinct type
-      (capped at 4 — beyond that, tray is too full).
+      (capped at 4).
     """
     if not state.main_board and not state.queues:
         if tray_filled(state) == 0:
@@ -79,18 +83,29 @@ def state_value(state: BoardState) -> float:
 
     score = 0.0
     all_tiles = set(visible_count) | set(tray_per_tile)
+    dead_tray_tiles = 0
     for tid in all_tiles:
         v = visible_count.get(tid, 0)
         t = tray_per_tile.get(tid, 0)
-        total = v + t
-        if total >= 3:
+        total_observable = v + t
+        if total_observable >= 3:
             score += 5.0  # triplet realisable
         if t == 2:
-            score += 5.0  # near-triplet seed: very valuable
+            score += 5.0  # near-triplet seed
         elif t == 1:
             score += 1.0  # versatile seed
         if v == 1 and t == 0:
-            score -= 3.0  # orphan
+            score -= 3.0  # orphan visible
+        # Dead tray tile detection: this tile is in the tray, and there
+        # aren't enough copies anywhere else (visible + simulated reveals)
+        # to ever form a triplet. The simulator's reveals have been baked
+        # into visible_count for occult-prior anchors, so total_observable
+        # is the simulator's best estimate of total supply for this tile.
+        # If supply < 3 AND we have at least 1 in tray, those tray slots
+        # are permanently occupied.
+        if t >= 1 and total_observable < 3:
+            dead_tray_tiles += t
+    score -= dead_tray_tiles * 15.0
 
     # Diversity bonus: tray with several distinct types is more
     # absorbent (more taps that don't push us toward overflow).
@@ -102,8 +117,7 @@ def state_value(state: BoardState) -> float:
 
     # Remaining tiles: each is a tile we still need to clear. Heavy
     # penalty so clearing 3 tiles via triplet is +6 from this term alone,
-    # offsetting the +5 "triplet realisable" we lose when the triplet
-    # is consumed.
+    # offsetting the +5 "triplet realisable" we lose when consumed.
     remaining = sum(1 for c in state.main_board if c.tile_id) + \
                 sum(1 for q in state.queues if q.tile_id)
     score -= remaining * 2.0

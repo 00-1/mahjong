@@ -120,6 +120,13 @@ def main() -> int:
                         "consulted when there's no clear win.")
     p.add_argument("--lookahead-depth", type=int, default=3,
                    help="Search depth when --use-lookahead is set (default 3).")
+    p.add_argument("--occult-confidence-threshold", type=float, default=0.99,
+                   help="Minimum confidence required to use a live occult "
+                        "prediction in lookahead simulation. Default 0.99 "
+                        "effectively excludes live predictions; relies on "
+                        "anchor priors. Lower this once the live predictor "
+                        "accuracy (data/levels/<NN>/occult_accuracy.json) "
+                        "beats the anchor-prior baseline.")
     args = p.parse_args()
 
     device_arg = ["-s", args.device] if args.device else []
@@ -192,10 +199,17 @@ def main() -> int:
             occult_for_solver = None
             if args.use_lookahead:
                 from src.solver.economy import merge_occult_and_priors
+                # Live occult predictor accuracy is tracked at
+                # data/levels/<NN>/occult_accuracy.json. Until it's
+                # demonstrably above the prior baseline, rely on anchor
+                # priors only (confidence_threshold=0.99 effectively
+                # excludes live predictions).
                 occult_for_solver = merge_occult_and_priors(
                     last_occult_predictions if last_occult_predictions else None,
                     levels_root, args.level,
-                    confidence_threshold=0.5, prior_min_obs=3,
+                    confidence_threshold=args.occult_confidence_threshold,
+                    prior_min_obs=3,
+                    prior_min_share=0.4,
                 )
                 if not occult_for_solver:
                     occult_for_solver = None

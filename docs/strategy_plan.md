@@ -133,3 +133,51 @@ Next iterations require live run data:
 - Phase 6 fully active once anchor_priors.json has data from real runs
 - Tuning weights in state_value based on what compare_strategies surfaces
 - Eventually: train value function from accumulated outcomes
+
+## Phase 8 — Solver bug fixes from accumulated data (2026-05-09)
+
+Inspecting `data/levels/08/occult_accuracy.json` revealed the live
+occult predictor at 0/14 correct (0% accuracy at all confidence
+buckets). At the same time, `anchor_priors.json` showed strong
+empirical priors (e.g. (0,5) is tile_006 in 34/41 samples = 83%,
+(4,0) is tile_003 in 27/57 = 47%).
+
+Three bugs found and fixed in `merge_occult_and_priors` +
+`simulate_tap`:
+
+1. Wrong depth: merge used `d1` priors (= what was on TOP, the tile
+   just tapped), but `simulate_tap` consumes the map as the
+   *revealed* tile (= what comes up after the tap). That's `d2`.
+   Net effect: the lookahead was being told "tapping this anchor
+   reveals the same tile we just removed", which models nothing.
+   Fix: use `d2`, also gate on `prior_min_share >= 0.4` to avoid
+   noisy uniform-distribution anchors.
+
+2. Live predictions polluting the map: with 0% accuracy at any
+   confidence, low/medium-confidence predictions were overwriting
+   the much-better priors. Fix: default `confidence_threshold=0.99`
+   (effectively excludes live predictions until the predictor
+   improves). Surface as `--occult-confidence-threshold` so we can
+   lower it as accuracy data improves.
+
+3. Reveal duplication: `simulate_tap` would re-reveal the same d2
+   tile every time the same anchor was tapped within a search
+   tree. Fix: only reveal when `cell.stack_depth == 1` (the first
+   tap of an anchor); deeper taps yield empty position.
+
+Strategic value-function addition: `state_value` now penalises DEAD
+tray tiles — entries whose tile_id has fewer than 3 instances
+across visible+tray+sim-revealed total (so a triplet is impossible).
+-15 per dead tile makes the lookahead refuse explore taps that
+permanently occupy a tray slot.
+
+Validated on saved states from `run_20260509_112851_l08`: at step 0
+(all anchors at depth 1), the d2-prior reveals shift per-candidate
+state_value by +1 to +3 for most positions, and the root lookahead
+EV improves from -25.30 to -19.30 — meaningful signal.
+
+These fixes are gated on having enough run data to populate
+anchor_priors with meaningful d2 distributions. We have that for
+level 8 now (12 runs). For new levels, the d2 distribution will
+start sparse and `prior_min_obs=3 + min_share=0.4` filter will
+gracefully fall back to "no reveal" until enough data accumulates.

@@ -105,15 +105,21 @@ def simulate_tap(
         if cell is None or cell.tile_id is None:
             return SimResult(new, None, True, "abandoned")  # invalid tap
         tapped_tile_id = cell.tile_id
-        # Reveal logic
-        if occult_predictions:
+        # Reveal logic. We only reveal the SECOND tile at this anchor
+        # (i.e. the prediction for "what comes up after the FIRST tap" —
+        # cell.stack_depth was 1). For deeper taps (stack_depth >= 2)
+        # most anchors don't have a prior, so we leave the position empty.
+        # This avoids the bug where the same anchor would keep yielding
+        # the predicted tile on every successive tap.
+        current_depth = cell.stack_depth or 1
+        if occult_predictions and current_depth == 1:
             key = ("main_board", r, c)
             if key in occult_predictions:
                 revealed_tile_id = occult_predictions[key]
         if revealed_tile_id is not None:
             new.main_board.append(MainCell(
                 row=r, col=c, bbox=cell.bbox,
-                tile_id=revealed_tile_id, stack_depth=(cell.stack_depth or 1) + 1,
+                tile_id=revealed_tile_id, stack_depth=current_depth + 1,
             ))
 
     elif location.startswith("queue:"):

@@ -167,12 +167,31 @@ def merge_occult_and_priors(
     occult_predictions: dict | None,
     levels_root: Path,
     level: int,
-    confidence_threshold: float = 0.5,
+    confidence_threshold: float = 0.99,
     prior_min_obs: int = 3,
+    prior_min_share: float = 0.4,
 ) -> dict:
-    """Build a unified anchor->tile_id prediction map combining live
-    occult predictions (high-confidence only) with accumulated priors
-    (when no occult prediction exists for that anchor)."""
+    """Build a unified anchor->tile_id prediction map used by simulate_tap
+    to model what tile is REVEALED after we tap an anchor.
+
+    Sources, in order of preference per anchor:
+      1. Live occult prediction (only if confidence >= confidence_threshold).
+      2. d2 anchor prior (the empirical distribution of what tile appears at
+         depth 2, i.e. what becomes visible after the first tap on the d1
+         top-of-stack tile). Required to have prior_min_obs samples and the
+         dominant tile to take prior_min_share of those samples.
+
+    Important: simulate_tap consumes this map keyed by ("main_board", r, c)
+    and uses the value as the *revealed* tile (the new top after a tap).
+    Thus the right prior depth is d2, not d1. (d1 is the prior on what was
+    already on top — the tile we just tapped — which would be a no-op
+    "reveal".)
+
+    Default confidence_threshold is intentionally restrictive (0.99). With
+    the current ensemble predictor showing 0% accuracy on level 8, we don't
+    want any low-confidence live predictions polluting the map. Anchor
+    priors are empirically much better (some anchors >80% top-1 share).
+    Raise/lower this once the predictor improves."""
     out: dict = {}
     if occult_predictions:
         for k, p in occult_predictions.items():
@@ -183,10 +202,10 @@ def merge_occult_and_priors(
                 conf = p.get("confidence", 0)
             if tid and conf >= confidence_threshold:
                 out[k] = tid
-    # Fill in from priors for any anchor we don't already have
+    # Fill in from priors for any anchor we don't already have. We use d2:
+    # what's revealed AFTER a tap on the current top-of-stack tile.
     priors = load_anchor_priors(levels_root, level)
     for anchor_key, anchor_data in priors.get("anchors", {}).items():
-        # Parse "(r,c)" -> tuple
         try:
             r, c = [int(x) for x in anchor_key.strip("()").split(",")]
         except Exception:
@@ -194,13 +213,16 @@ def merge_occult_and_priors(
         key = ("main_board", r, c)
         if key in out:
             continue
-        # Use depth-1 prior (best guess for unrevealed top)
-        d1 = anchor_data.get("d1", {})
-        if d1.get("total", 0) >= prior_min_obs:
-            counts = d1.get("tiles", {})
-            if counts:
-                best = max(counts, key=counts.get)
-                out[key] = best
+        d2 = anchor_data.get("d2", {})
+        total = d2.get("total", 0)
+        counts = d2.get("tiles", {})
+        if total < prior_min_obs or not counts:
+            continue
+        best = max(counts, key=counts.get)
+        share = counts[best] / total
+        if share < prior_min_share:
+            continue
+        out[key] = best
     return out
 
 
