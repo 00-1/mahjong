@@ -16,6 +16,7 @@ Usage:
 
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 
@@ -81,6 +82,8 @@ def main(image_path: Path, level: int, out_dir: Path | None, tiles_dir: Path, re
 
     template_path = ROOT / "data" / "levels" / f"{level:02d}" / "template.json"
     template = None if rebuild_template else load_template(template_path)
+    template_native_w = template.image_w if template else w
+    template_native_h = template.image_h if template else h
     if template is None:
         template = build_template(detections, w, h)
         save_template(template, template_path)
@@ -150,6 +153,30 @@ def main(image_path: Path, level: int, out_dir: Path | None, tiles_dir: Path, re
     state.save(out_dir / "state.json")
     overlay = _annotate(bgr, main_cells, queue_cells, tray_slots, unmatched)
     cv2.imwrite(str(out_dir / "overlay.jpg"), overlay, [cv2.IMWRITE_JPEG_QUALITY, 85])
+
+    # Surface unmatched detection positions to disk so missing-anchor
+    # bugs are easy to discover post-hoc. If an unmatched_positions.json
+    # accumulates the same (cx, cy) across runs, the template needs new
+    # anchors there.
+    if unmatched:
+        # Native-res equivalents help us paste new anchors into template.json
+        # which stores values in the calibration resolution.
+        sx_back = template_native_w / w if w else 1.0
+        sy_back = template_native_h / h if h else 1.0
+        ump = [
+            {
+                "cx": d.cx, "cy": d.cy,
+                "native_cx": int(d.cx * sx_back),
+                "native_cy": int(d.cy * sy_back),
+                "w": d.w, "h": d.h,
+            }
+            for d in unmatched
+        ]
+        (out_dir / "unmatched_positions.json").write_text(
+            json.dumps({"image": image_rel, "image_size": [w, h],
+                        "template_native": [template_native_w, template_native_h],
+                        "unmatched": ump}, indent=2)
+        )
 
     click.echo(f"main_board cells: {len(main_cells)}")
     click.echo(f"queue heads:      {len(queue_cells)}")

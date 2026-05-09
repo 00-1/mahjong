@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import subprocess
 import sys
 import time
 from datetime import datetime
@@ -164,8 +165,64 @@ def main() -> int:
     meta = start_run(runs_dir, args.level, args.run_id)
     run_id = meta.run_id
     log = MasterLog(runs_dir / run_id / "log.jsonl")
-    log.emit("run_start", run_id=run_id, level=args.level, started_at=meta.started_at,
-             min_wait=args.min_wait, max_wait=args.max_wait, max_tap_retries=args.max_tap_retries)
+
+    # Record code/library version at run start so we can tell post-hoc
+    # which version of the strategy/vision pipeline produced this run's
+    # data. Critical for distinguishing "fix didn't work" from "fix
+    # wasn't applied" when reviewing logs after the fact.
+    def _git_revision() -> dict:
+        info: dict = {}
+        try:
+            info["sha"] = subprocess.run(
+                ["git", "-C", str(ROOT), "rev-parse", "HEAD"],
+                capture_output=True, text=True, timeout=2,
+            ).stdout.strip() or None
+        except Exception:
+            info["sha"] = None
+        try:
+            info["sha_short"] = subprocess.run(
+                ["git", "-C", str(ROOT), "rev-parse", "--short", "HEAD"],
+                capture_output=True, text=True, timeout=2,
+            ).stdout.strip() or None
+        except Exception:
+            info["sha_short"] = None
+        try:
+            # Are there local edits on top of HEAD?
+            dirty = subprocess.run(
+                ["git", "-C", str(ROOT), "status", "--porcelain"],
+                capture_output=True, text=True, timeout=2,
+            ).stdout.strip()
+            info["dirty"] = bool(dirty)
+            # Porcelain lines look like "XY path" — split once on whitespace
+            # to recover the path regardless of single-char vs two-char status.
+            info["dirty_files"] = [
+                (l.split(None, 1)[1] if " " in l else l)
+                for l in dirty.splitlines()[:10]
+            ] if dirty else []
+        except Exception:
+            info["dirty"] = None
+        return info
+
+    def _library_version() -> dict:
+        """Snapshot of the tile library at run start so we can detect
+        e.g. a stale tile_019 entry not yet purged by pull."""
+        try:
+            idx = json.loads((args.tiles_dir / "index.json").read_text())
+            entries = idx.get("entries", [])
+            return {
+                "n_entries": len(entries),
+                "max_tile_id": (entries[-1].get("tile_id") if entries else None),
+                "labelled_count": sum(1 for e in entries if e.get("label")),
+                "total_samples": sum(len(e.get("samples", [])) for e in entries),
+            }
+        except Exception as exc:
+            return {"error": str(exc)}
+
+    log.emit(
+        "run_start", run_id=run_id, level=args.level, started_at=meta.started_at,
+        min_wait=args.min_wait, max_wait=args.max_wait, max_tap_retries=args.max_tap_retries,
+        git=_git_revision(), tile_library=_library_version(),
+    )
 
     step = 0
     final_status = "abandoned"

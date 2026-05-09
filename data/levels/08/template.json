@@ -54,6 +54,14 @@
     },
     {
       "zone": "main_board",
+      "row": 5,
+      "col": 6,
+      "queue_id": null,
+      "cx": 610,
+      "cy": 782
+    },
+    {
+      "zone": "main_board",
       "row": 1,
       "col": 2,
       "queue_id": null,
@@ -67,6 +75,14 @@
       "queue_id": null,
       "cx": 761,
       "cy": 874
+    },
+    {
+      "zone": "main_board",
+      "row": 6,
+      "col": 6,
+      "queue_id": null,
+      "cx": 610,
+      "cy": 946
     },
     {
       "zone": "main_board",
@@ -99,6 +115,14 @@
       "queue_id": null,
       "cx": 761,
       "cy": 1037
+    },
+    {
+      "zone": "main_board",
+      "row": 7,
+      "col": 6,
+      "queue_id": null,
+      "cx": 610,
+      "cy": 1108
     },
     {
       "zone": "main_board",
