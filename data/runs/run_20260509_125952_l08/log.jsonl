@@ -1,0 +1,10 @@
+{"event": "run_start", "ts": "2026-05-09T12:59:52.860Z", "run_id": "run_20260509_125952_l08", "level": 8, "started_at": "2026-05-09T12:59:52Z", "min_wait": 0.3, "max_wait": 3.0, "max_tap_retries": 2}
+{"event": "decision", "ts": "2026-05-09T12:59:58.173Z", "step": 0, "reason": "EXPLORE", "tap": null, "tray": 6, "score": -100.0, "decide_ms": 10, "num_alternatives": 3}
+{"event": "occult_predict", "ts": "2026-05-09T13:00:11.160Z", "step": 0, "predictions_count": 11, "occult_ms": 12828, "high_confidence": 0}
+{"event": "tap", "ts": "2026-05-09T13:00:11.161Z", "step": 0, "x": 205, "y": 621, "loc": "(0,1)", "tile": "lotus", "reason": "EXPLORE", "score": -100.0, "attempt": 1}
+{"event": "verify", "ts": "2026-05-09T13:00:15.830Z", "step": 0, "success": true, "reason": "ok", "notes": "main_board (0,1) tile_008 -> tile_011", "attempt": 1, "tap_ms": 118, "wait_ms": 4548, "elapsed_sec": 0.3}
+{"event": "decision", "ts": "2026-05-09T13:00:15.838Z", "step": 1, "reason": "GAME_OVER", "tap": null, "tray": 7, "score": null, "decide_ms": 0, "num_alternatives": 0}
+{"event": "occult_verify", "ts": "2026-05-09T13:00:15.838Z", "step": 1, "total": 1, "correct": 0, "comparisons": [{"anchor_key": ["main_board", 0, 0], "predicted_tile_id": "tile_005", "actual_tile_id": "tile_001", "correct": false, "confidence": 0.21, "offset": [75, 0], "methods": {"phash_top": "tile_005", "phash_score": 114.0, "ncc_top": "tile_002", "ncc_score": 0.795489028096199, "hist_top": "tile_011", "hist_score": 3.274631131685044, "orb_top": "tile_005", "orb_top_score": 0.017, "v_mean": 109.1, "sat_frac": 0.629, "cream_frac": 0.178, "margin": 0.21}}]}
+{"event": "occult_predict", "ts": "2026-05-09T13:00:23.531Z", "step": 1, "predictions_count": 10, "occult_ms": 7606, "high_confidence": 0}
+{"event": "game_over", "ts": "2026-05-09T13:00:23.532Z", "step": 1}
+{"event": "run_end", "ts": "2026-05-09T13:00:23.536Z", "run_id": "run_20260509_125952_l08", "status": "lost", "reason": "game_over", "steps": 1, "level": 8, "duration_sec": 30.7, "level_win_rate": 0.25}

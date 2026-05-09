@@ -1,107 +1,151 @@
 {
   "level": 8,
-  "runs_total": 3,
+  "runs_total": 12,
   "runs_won": 2,
-  "runs_lost": 0,
-  "runs_abandoned": 1,
-  "total_taps": 36,
+  "runs_lost": 6,
+  "runs_abandoned": 4,
+  "total_taps": 72,
   "total_taps_won": 35,
-  "total_taps_lost": 0,
-  "common_loss_tray_tiles": {},
+  "total_taps_lost": 10,
+  "common_loss_tray_tiles": {
+    "tile_010": 10,
+    "tile_011": 10,
+    "tile_007": 5,
+    "tile_001": 5,
+    "tile_008": 5
+  },
   "per_anchor_observed_tiles": {
     "(0,0)": {
       "tile_010": 14,
       "tile_002": 1,
-      "tile_011": 1
+      "tile_011": 7,
+      "tile_007": 1,
+      "tile_001": 5
     },
     "(0,1)": {
-      "tile_010": 3,
-      "tile_008": 3,
+      "tile_010": 20,
+      "tile_008": 16,
       "tile_006": 1,
-      "tile_002": 1,
+      "tile_002": 4,
       "tile_001": 1,
       "tile_005": 1,
-      "tile_009": 1
+      "tile_009": 1,
+      "tile_011": 6
     },
     "(0,2)": {
       "tile_001": 7,
       "tile_013": 1,
-      "tile_004": 2,
+      "tile_004": 3,
       "tile_009": 2,
-      "tile_002": 10,
-      "tile_006": 1
+      "tile_002": 11,
+      "tile_006": 1,
+      "tile_008": 12,
+      "tile_011": 5
     },
     "(0,4)": {
       "tile_002": 6,
       "tile_008": 3,
-      "tile_007": 5
+      "tile_007": 5,
+      "tile_003": 7,
+      "tile_012": 28
     },
     "(1,2)": {
       "tile_001": 9,
       "tile_002": 1,
-      "tile_013": 4,
-      "tile_004": 15
+      "tile_013": 18,
+      "tile_004": 15,
+      "tile_008": 3,
+      "tile_007": 3,
+      "tile_005": 11
     },
     "(1,3)": {
       "tile_007": 17,
-      "tile_013": 12
+      "tile_013": 12,
+      "tile_009": 12,
+      "tile_004": 16
     },
     "(2,1)": {
-      "tile_013": 1,
-      "tile_004": 2
+      "tile_013": 14,
+      "tile_004": 3
     },
     "(3,2)": {
-      "tile_008": 9,
-      "tile_013": 5,
+      "tile_008": 27,
+      "tile_013": 6,
       "tile_003": 9,
-      "tile_010": 1
+      "tile_010": 1,
+      "tile_004": 9,
+      "tile_007": 1
     },
     "(3,3)": {
       "tile_012": 16,
-      "tile_005": 3
+      "tile_005": 14,
+      "tile_004": 6,
+      "tile_008": 1
     },
     "(4,1)": {
       "tile_003": 9,
       "tile_011": 9,
-      "tile_005": 1,
-      "tile_008": 1
+      "tile_005": 3,
+      "tile_008": 1,
+      "tile_013": 12,
+      "tile_009": 11
     },
     "(4,2)": {
-      "tile_013": 1,
+      "tile_013": 4,
       "tile_011": 9,
-      "tile_008": 2
+      "tile_008": 2,
+      "tile_004": 12,
+      "tile_002": 4
     },
     "(4,3)": {
-      "tile_007": 9,
-      "tile_013": 20
+      "tile_007": 13,
+      "tile_013": 20,
+      "tile_001": 8,
+      "tile_011": 3,
+      "tile_008": 24
     },
     "(4,4)": {
       "tile_012": 9,
       "tile_008": 3,
-      "tile_010": 9
+      "tile_010": 9,
+      "tile_011": 11,
+      "tile_009": 1,
+      "tile_007": 1,
+      "tile_001": 18
     },
     "(0,5)": {
-      "tile_006": 22,
-      "tile_002": 1
+      "tile_006": 34,
+      "tile_002": 1,
+      "tile_008": 6
     },
     "(0,3)": {
-      "tile_009": 4,
-      "tile_008": 7
+      "tile_009": 5,
+      "tile_008": 10,
+      "tile_003": 2,
+      "tile_005": 10,
+      "tile_012": 11
     },
     "(2,4)": {
       "tile_003": 6,
       "tile_011": 1,
-      "tile_007": 11
+      "tile_007": 11,
+      "tile_004": 2,
+      "tile_006": 27
     },
     "(4,0)": {
       "tile_005": 10,
-      "tile_001": 2
+      "tile_001": 2,
+      "tile_013": 12,
+      "tile_003": 27
     },
     "(4,5)": {
       "tile_001": 13,
-      "tile_011": 7
+      "tile_011": 7,
+      "tile_002": 12,
+      "tile_010": 20,
+      "tile_007": 7
     }
   },
-  "win_rate": 0.6666666666666666,
-  "avg_taps_per_run": 12.0
+  "win_rate": 0.16666666666666666,
+  "avg_taps_per_run": 6.0
 }

@@ -1,0 +1,8 @@
+{
+  "run_id": "run_20260509_125119_l08",
+  "level": 8,
+  "started_at": "2026-05-09T12:51:19Z",
+  "last_step": 10,
+  "status": "abandoned",
+  "notes": "exception:FileNotFoundError"
+}

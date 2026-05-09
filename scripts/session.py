@@ -42,7 +42,8 @@ def run_autoplay(level: int, args, *, attempt: int) -> dict:
     """Invoke autoplay.py for one attempt at one level. Returns summary dict."""
     cmd = [sys.executable, str(ROOT / "scripts" / "autoplay.py"), "--level", str(level)]
     for opt in ("--device", "--max-steps", "--min-wait", "--max-wait",
-                "--triplet-extra-wait", "--max-tap-retries"):
+                "--triplet-extra-wait", "--max-tap-retries",
+                "--lookahead-depth", "--shot-dir"):
         val = getattr(args, opt[2:].replace("-", "_"), None)
         if val is not None:
             cmd.extend([opt, str(val)])
@@ -50,6 +51,12 @@ def run_autoplay(level: int, args, *, attempt: int) -> dict:
         cmd.append("--keep-screenshots")
     if args.verbose:
         cmd.append("--verbose")
+    if args.use_lookahead:
+        cmd.append("--use-lookahead")
+    if args.learn_occult:
+        cmd.append("--learn-occult")
+    if args.learn_dim:
+        cmd.append("--learn-dim")
 
     start_ts = time.time()
     print(json.dumps({"event": "attempt_start", "level": level,
@@ -83,6 +90,16 @@ def main() -> int:
                    help="Halt after N consecutive losses on the SAME level. "
                         "Strategy probably broken; don't burn all 10 challenge "
                         "tickets. Default 4.")
+    p.add_argument("--use-lookahead", action="store_true",
+                   help="Forwarded to autoplay.")
+    p.add_argument("--lookahead-depth", type=int, default=None,
+                   help="Forwarded to autoplay.")
+    p.add_argument("--learn-occult", action="store_true",
+                   help="Forwarded to autoplay.")
+    p.add_argument("--learn-dim", action="store_true",
+                   help="Forwarded to autoplay.")
+    p.add_argument("--shot-dir", type=str, default=None,
+                   help="Forwarded to autoplay (use writable dir on Termux).")
     args = p.parse_args()
 
     session_started = time.time()
@@ -116,10 +133,21 @@ def main() -> int:
                                       "msg": "strategy probably broken; halting before burning more tickets"}))
                     return 1
             if attempt < args.max_attempts:
-                print(json.dumps({"event": "pause_between_attempts",
-                                  "seconds": args.inter_attempt_pause,
-                                  "msg": "navigate back to gameplay screen now"}))
-                time.sleep(args.inter_attempt_pause)
+                if (ROOT / "data" / "restart_config.json").exists():
+                    print(json.dumps({"event": "restart_run", "between_attempts": True}))
+                    rc = subprocess.run([
+                        sys.executable, str(ROOT / "scripts" / "restart.py"),
+                        *(["--shot-dir", args.shot_dir] if args.shot_dir else []),
+                    ]).returncode
+                    if rc != 0:
+                        print(json.dumps({"event": "restart_failed", "rc": rc,
+                                          "msg": "falling back to fixed sleep"}))
+                        time.sleep(args.inter_attempt_pause)
+                else:
+                    print(json.dumps({"event": "pause_between_attempts",
+                                      "seconds": args.inter_attempt_pause,
+                                      "msg": "navigate back to gameplay screen now"}))
+                    time.sleep(args.inter_attempt_pause)
         if won_this_level:
             levels_won += 1
         # Pause between levels too — for navigating to the next one

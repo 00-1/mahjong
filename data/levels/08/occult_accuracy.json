@@ -1,0 +1,94 @@
+{
+  "level": 8,
+  "total": 14,
+  "correct": 0,
+  "by_predicted": {
+    "tile_005": {
+      "total": 4,
+      "correct": 0
+    },
+    "tile_011": {
+      "total": 1,
+      "correct": 0
+    },
+    "tile_002": {
+      "total": 3,
+      "correct": 0
+    },
+    "tile_009": {
+      "total": 4,
+      "correct": 0
+    },
+    "tile_007": {
+      "total": 1,
+      "correct": 0
+    },
+    "tile_004": {
+      "total": 1,
+      "correct": 0
+    }
+  },
+  "by_actual": {
+    "tile_011": {
+      "total": 2,
+      "correct": 0
+    },
+    "tile_012": {
+      "total": 3,
+      "correct": 0
+    },
+    "tile_001": {
+      "total": 2,
+      "correct": 0
+    },
+    "tile_013": {
+      "total": 2,
+      "correct": 0
+    },
+    "tile_006": {
+      "total": 1,
+      "correct": 0
+    },
+    "tile_003": {
+      "total": 2,
+      "correct": 0
+    },
+    "tile_008": {
+      "total": 1,
+      "correct": 0
+    },
+    "tile_007": {
+      "total": 1,
+      "correct": 0
+    }
+  },
+  "confusion": {
+    "tile_005->tile_011": 2,
+    "tile_011->tile_012": 1,
+    "tile_005->tile_001": 1,
+    "tile_002->tile_001": 1,
+    "tile_002->tile_012": 2,
+    "tile_009->tile_013": 1,
+    "tile_005->tile_006": 1,
+    "tile_009->tile_003": 1,
+    "tile_009->tile_008": 1,
+    "tile_009->tile_007": 1,
+    "tile_007->tile_003": 1,
+    "tile_004->tile_013": 1
+  },
+  "by_confidence_bucket": {
+    "med": {
+      "total": 2,
+      "correct": 0,
+      "accuracy": 0.0
+    },
+    "low": {
+      "total": 12,
+      "correct": 0,
+      "accuracy": 0.0
+    }
+  },
+  "method_top_agrees_when_correct": 0,
+  "method_top_agrees_when_wrong": 0,
+  "accuracy": 0.0
+}

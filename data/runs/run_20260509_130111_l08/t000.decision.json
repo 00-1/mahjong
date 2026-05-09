@@ -1,0 +1,36 @@
+{
+  "should_stop": true,
+  "reason_code": "GAME_OVER",
+  "reason": "tray full (7/7) with no triplet \u2014 game lost",
+  "state": {
+    "level": 8,
+    "image_size": [
+      1080,
+      2400
+    ],
+    "tray_filled": 7,
+    "tray": [
+      "kite",
+      "kite",
+      "paper_crane",
+      "paper_crane",
+      "swallow",
+      "plumeria",
+      "lotus"
+    ],
+    "main_board_count": 9,
+    "queue_count": 2,
+    "tile_counts": {
+      "plumeria": 2,
+      "paper_crane": 3,
+      "sunflower": 2,
+      "dandelion": 2,
+      "lantern": 1,
+      "bee": 2,
+      "lotus": 2,
+      "swallow": 2,
+      "kite": 2
+    },
+    "looks_like_puzzle": true
+  }
+}

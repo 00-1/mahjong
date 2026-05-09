@@ -1,0 +1,22 @@
+{"event": "run_start", "ts": "2026-05-09T12:52:41.583Z", "run_id": "run_20260509_125241_l08", "level": 8, "started_at": "2026-05-09T12:52:41Z", "min_wait": 0.3, "max_wait": 3.0, "max_tap_retries": 2}
+{"event": "decision", "ts": "2026-05-09T12:52:46.733Z", "step": 0, "reason": "EXPLORE", "tap": null, "tray": 5, "score": -2.429, "decide_ms": 253, "num_alternatives": 3}
+{"event": "occult_predict", "ts": "2026-05-09T12:52:52.232Z", "step": 0, "predictions_count": 6, "occult_ms": 5400, "high_confidence": 0}
+{"event": "tap", "ts": "2026-05-09T12:52:52.233Z", "step": 0, "x": 808, "y": 1052, "loc": "(4,4)", "tile": "paper_crane", "reason": "EXPLORE", "score": -2.429, "attempt": 1}
+{"event": "verify", "ts": "2026-05-09T12:52:56.255Z", "step": 0, "success": true, "reason": "ok", "notes": "main_board (4,4) tile_011 -> None", "attempt": 1, "tap_ms": 92, "wait_ms": 3928, "elapsed_sec": 0.3}
+{"event": "decision", "ts": "2026-05-09T12:52:56.258Z", "step": 1, "reason": "NOT_A_PUZZLE", "tap": null, "tray": 0, "score": null, "decide_ms": 0, "num_alternatives": 0}
+{"event": "occult_predict", "ts": "2026-05-09T12:53:07.027Z", "step": 1, "predictions_count": 21, "occult_ms": 10708, "high_confidence": 0}
+{"event": "not_a_puzzle", "ts": "2026-05-09T12:53:07.027Z", "step": 1, "consecutive": 1}
+{"event": "decision", "ts": "2026-05-09T12:53:11.557Z", "step": 2, "reason": "NOT_A_PUZZLE", "tap": null, "tray": 0, "score": null, "decide_ms": 0, "num_alternatives": 0}
+{"event": "occult_predict", "ts": "2026-05-09T12:53:22.312Z", "step": 2, "predictions_count": 21, "occult_ms": 10694, "high_confidence": 0}
+{"event": "not_a_puzzle", "ts": "2026-05-09T12:53:22.313Z", "step": 2, "consecutive": 2}
+{"event": "decision", "ts": "2026-05-09T12:53:26.867Z", "step": 3, "reason": "NOT_A_PUZZLE", "tap": null, "tray": 0, "score": null, "decide_ms": 0, "num_alternatives": 0}
+{"event": "occult_predict", "ts": "2026-05-09T12:53:37.600Z", "step": 3, "predictions_count": 21, "occult_ms": 10673, "high_confidence": 0}
+{"event": "not_a_puzzle", "ts": "2026-05-09T12:53:37.601Z", "step": 3, "consecutive": 3}
+{"event": "decision", "ts": "2026-05-09T12:53:42.118Z", "step": 4, "reason": "NOT_A_PUZZLE", "tap": null, "tray": 0, "score": null, "decide_ms": 0, "num_alternatives": 0}
+{"event": "occult_predict", "ts": "2026-05-09T12:53:52.935Z", "step": 4, "predictions_count": 21, "occult_ms": 10757, "high_confidence": 0}
+{"event": "not_a_puzzle", "ts": "2026-05-09T12:53:52.935Z", "step": 4, "consecutive": 4}
+{"event": "decision", "ts": "2026-05-09T12:53:57.537Z", "step": 5, "reason": "NOT_A_PUZZLE", "tap": null, "tray": 0, "score": null, "decide_ms": 0, "num_alternatives": 0}
+{"event": "occult_predict", "ts": "2026-05-09T12:54:08.949Z", "step": 5, "predictions_count": 21, "occult_ms": 11353, "high_confidence": 0}
+{"event": "not_a_puzzle", "ts": "2026-05-09T12:54:08.950Z", "step": 5, "consecutive": 5}
+{"event": "stop_by_heuristic", "ts": "2026-05-09T12:54:08.950Z", "step": 5, "outcome": "lost", "pre_npz_main": 12, "pre_npz_tray": 5}
+{"event": "run_end", "ts": "2026-05-09T12:54:08.954Z", "run_id": "run_20260509_125241_l08", "status": "lost", "reason": "5x_not_a_puzzle", "steps": 5, "level": 8, "duration_sec": 87.4, "level_win_rate": 0.4}

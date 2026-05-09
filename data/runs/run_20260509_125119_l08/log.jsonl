@@ -1,0 +1,47 @@
+{"event": "run_start", "ts": "2026-05-09T12:51:19.399Z", "run_id": "run_20260509_125119_l08", "level": 8, "started_at": "2026-05-09T12:51:19Z", "min_wait": 0.3, "max_wait": 3.0, "max_tap_retries": 2}
+{"event": "decision", "ts": "2026-05-09T12:51:23.093Z", "step": 0, "reason": "TRIPLET", "tap": null, "tray": 0, "score": 8.0, "decide_ms": 0, "num_alternatives": 3}
+{"event": "occult_predict", "ts": "2026-05-09T12:51:23.224Z", "step": 0, "predictions_count": 0, "occult_ms": 12, "high_confidence": 0}
+{"event": "triplet_burst", "ts": "2026-05-09T12:51:23.224Z", "step": 0, "tile": "pink_daisy", "taps": 3, "locations": ["(2,1)", "(2,4)", "(3,3)"]}
+{"event": "verify_burst", "ts": "2026-05-09T12:51:29.491Z", "step": 0, "success": false, "reason": "partial", "notes": "only 2/3 positions changed", "elapsed_sec": 1.3}
+{"event": "decision", "ts": "2026-05-09T12:51:29.494Z", "step": 1, "reason": "TRIPLET", "tap": null, "tray": 2, "score": 10.0, "decide_ms": 0, "num_alternatives": 3}
+{"event": "occult_predict", "ts": "2026-05-09T12:51:30.525Z", "step": 1, "predictions_count": 1, "occult_ms": 946, "high_confidence": 0}
+{"event": "tap", "ts": "2026-05-09T12:51:30.526Z", "step": 1, "x": 808, "y": 837, "loc": "(2,4)", "tile": "pink_daisy", "reason": "TRIPLET", "score": 10.0, "attempt": 1}
+{"event": "verify", "ts": "2026-05-09T12:51:34.490Z", "step": 1, "success": true, "reason": "ok", "notes": "main_board (2,4) tile_004 -> None", "attempt": 1, "tap_ms": 106, "wait_ms": 3856, "elapsed_sec": 0.3}
+{"event": "decision", "ts": "2026-05-09T12:51:34.493Z", "step": 2, "reason": "TRIPLET", "tap": null, "tray": 0, "score": 8.0, "decide_ms": 0, "num_alternatives": 3}
+{"event": "occult_predict", "ts": "2026-05-09T12:51:35.814Z", "step": 2, "predictions_count": 2, "occult_ms": 1238, "high_confidence": 0}
+{"event": "triplet_burst", "ts": "2026-05-09T12:51:35.815Z", "step": 2, "tile": "lotus", "taps": 3, "locations": ["(0,2)", "(0,3)", "(1,2)"]}
+{"event": "verify_burst", "ts": "2026-05-09T12:51:42.161Z", "step": 2, "success": false, "reason": "partial", "notes": "only 2/3 positions changed", "elapsed_sec": 1.3}
+{"event": "decision", "ts": "2026-05-09T12:51:42.164Z", "step": 3, "reason": "TRIPLET", "tap": null, "tray": 0, "score": 8.0, "decide_ms": 1, "num_alternatives": 3}
+{"event": "occult_predict", "ts": "2026-05-09T12:51:43.485Z", "step": 3, "predictions_count": 2, "occult_ms": 1240, "high_confidence": 0}
+{"event": "triplet_burst", "ts": "2026-05-09T12:51:43.486Z", "step": 3, "tile": "swallow", "taps": 3, "locations": ["(1,2)", "(4,3)", "queue:right_upper"]}
+{"event": "verify_burst", "ts": "2026-05-09T12:51:49.725Z", "step": 3, "success": true, "reason": "ok", "notes": "all 3 positions changed; tray tile_007 0 -> 0", "elapsed_sec": 1.3}
+{"event": "decision", "ts": "2026-05-09T12:51:52.849Z", "step": 4, "reason": "EXPLORE", "tap": null, "tray": 0, "score": -2.0, "decide_ms": 3119, "num_alternatives": 3}
+{"event": "occult_predict", "ts": "2026-05-09T12:51:55.191Z", "step": 4, "predictions_count": 3, "occult_ms": 2261, "high_confidence": 0}
+{"event": "tap", "ts": "2026-05-09T12:51:55.191Z", "step": 4, "x": 607, "y": 621, "loc": "(0,3)", "tile": "bee", "reason": "EXPLORE", "score": -2.0, "attempt": 1}
+{"event": "verify", "ts": "2026-05-09T12:51:59.057Z", "step": 4, "success": true, "reason": "ok", "notes": "main_board (0,3) tile_003 -> None", "attempt": 1, "tap_ms": 112, "wait_ms": 3753, "elapsed_sec": 0.3}
+{"event": "decision", "ts": "2026-05-09T12:52:01.687Z", "step": 5, "reason": "EXPLORE", "tap": null, "tray": 1, "score": -2.286, "decide_ms": 2626, "num_alternatives": 3}
+{"event": "occult_predict", "ts": "2026-05-09T12:52:04.572Z", "step": 5, "predictions_count": 4, "occult_ms": 2801, "high_confidence": 0}
+{"event": "tap", "ts": "2026-05-09T12:52:04.573Z", "step": 5, "x": 138, "y": 621, "loc": "(0,0)", "tile": "paper_crane", "reason": "EXPLORE", "score": -2.286, "attempt": 1}
+{"event": "verify", "ts": "2026-05-09T12:52:08.413Z", "step": 5, "success": true, "reason": "ok", "notes": "main_board (0,0) tile_011 -> None", "attempt": 1, "tap_ms": 85, "wait_ms": 3753, "elapsed_sec": 0.3}
+{"event": "decision", "ts": "2026-05-09T12:52:10.599Z", "step": 6, "reason": "EXPLORE", "tap": null, "tray": 2, "score": -1.571, "decide_ms": 2182, "num_alternatives": 3}
+{"event": "occult_predict", "ts": "2026-05-09T12:52:14.004Z", "step": 6, "predictions_count": 5, "occult_ms": 3323, "high_confidence": 0}
+{"event": "tap", "ts": "2026-05-09T12:52:14.005Z", "step": 6, "x": 808, "y": 621, "loc": "(0,4)", "tile": "bee", "reason": "EXPLORE", "score": -1.571, "attempt": 1}
+{"event": "verify", "ts": "2026-05-09T12:52:17.923Z", "step": 6, "success": true, "reason": "ok", "notes": "main_board (0,4) tile_003 -> tile_012", "attempt": 1, "tap_ms": 95, "wait_ms": 3822, "elapsed_sec": 0.3}
+{"event": "decision", "ts": "2026-05-09T12:52:20.194Z", "step": 7, "reason": "EXPLORE", "tap": null, "tray": 3, "score": -4.357, "decide_ms": 2267, "num_alternatives": 3}
+{"event": "occult_predict", "ts": "2026-05-09T12:52:23.596Z", "step": 7, "predictions_count": 5, "occult_ms": 3318, "high_confidence": 0}
+{"event": "tap", "ts": "2026-05-09T12:52:23.597Z", "step": 7, "x": 808, "y": 693, "loc": "(0,4)", "tile": "sunflower", "reason": "EXPLORE", "score": -4.357, "attempt": 1}
+{"event": "verify", "ts": "2026-05-09T12:52:27.566Z", "step": 7, "success": true, "reason": "ok", "notes": "main_board (0,4) tile_012 -> None", "attempt": 1, "tap_ms": 134, "wait_ms": 3834, "elapsed_sec": 0.3}
+{"event": "decision", "ts": "2026-05-09T12:52:29.227Z", "step": 8, "reason": "EXPLORE", "tap": null, "tray": 4, "score": -3.143, "decide_ms": 1658, "num_alternatives": 3}
+{"event": "occult_predict", "ts": "2026-05-09T12:52:33.133Z", "step": 8, "predictions_count": 6, "occult_ms": 3823, "high_confidence": 0}
+{"event": "tap", "ts": "2026-05-09T12:52:33.134Z", "step": 8, "x": 272, "y": 621, "loc": "(0,1)", "tile": "kite", "reason": "EXPLORE", "score": -3.143, "attempt": 1}
+{"event": "verify", "ts": "2026-05-09T12:52:37.014Z", "step": 8, "success": true, "reason": "ok", "notes": "main_board (0,1) tile_010 -> tile_002", "attempt": 1, "tap_ms": 99, "wait_ms": 3780, "elapsed_sec": 0.3}
+{"event": "decision", "ts": "2026-05-09T12:52:37.137Z", "step": 9, "reason": "EXPLORE", "tap": null, "tray": 5, "score": -2.429, "decide_ms": 119, "num_alternatives": 3}
+{"event": "occult_predict", "ts": "2026-05-09T12:52:41.584Z", "step": 9, "predictions_count": 6, "occult_ms": 4365, "high_confidence": 0}
+{"event": "tap", "ts": "2026-05-09T12:52:41.585Z", "step": 9, "x": 808, "y": 1052, "loc": "(4,4)", "tile": "paper_crane", "reason": "EXPLORE", "score": -2.429, "attempt": 1}
+{"event": "verify", "ts": "2026-05-09T12:52:46.361Z", "step": 9, "success": true, "reason": "ok", "notes": "main_board (4,4) tile_011 -> tile_009", "attempt": 1, "tap_ms": 107, "wait_ms": 4668, "elapsed_sec": 0.3}
+{"event": "decision", "ts": "2026-05-09T12:52:46.373Z", "step": 10, "reason": "EXPLORE", "tap": null, "tray": 6, "score": -100.0, "decide_ms": 8, "num_alternatives": 3}
+{"event": "occult_predict", "ts": "2026-05-09T12:52:52.131Z", "step": 10, "predictions_count": 6, "occult_ms": 5663, "high_confidence": 0}
+{"event": "tap", "ts": "2026-05-09T12:52:52.132Z", "step": 10, "x": 272, "y": 692, "loc": "(0,1)", "tile": "butterfly_orb", "reason": "EXPLORE", "score": -100.0, "attempt": 1}
+{"event": "verify", "ts": "2026-05-09T12:52:55.299Z", "step": 10, "success": true, "reason": "ok", "notes": "main_board (0,1) tile_002 -> None", "attempt": 1, "tap_ms": 90, "wait_ms": 3074, "elapsed_sec": 0.3}
+{"event": "exception", "ts": "2026-05-09T12:52:55.303Z", "step": 11, "msg": "[Errno 2] No such file or directory: '/data/data/com.termux/files/home/mahjong/data/extractions/level_08/autoplay_wait_1778331172626_1/state.json'", "type": "FileNotFoundError"}
+{"event": "run_end", "ts": "2026-05-09T12:52:55.312Z", "run_id": "run_20260509_125119_l08", "status": "abandoned", "reason": "exception:FileNotFoundError", "steps": 11, "level": 8, "duration_sec": 95.9, "level_win_rate": 0.5}
