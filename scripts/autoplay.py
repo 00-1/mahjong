@@ -660,7 +660,13 @@ def main() -> int:
                          success=v.success, reason=v.reason, notes=v.notes,
                          attempt=tap_attempts + 1,
                          tap_ms=tap_ms, wait_ms=wait_ms,
-                         elapsed_sec=round(elapsed, 2))
+                         elapsed_sec=round(elapsed, 2),
+                         expected_tile_id=v.expected_tile_id,
+                         target_actual_tile_id=v.target_actual_tile_id,
+                         intended_actual_match=v.intended_actual_match,
+                         tray_added=v.tray_added_tile_ids,
+                         tray_removed=v.tray_removed_tile_ids,
+                         unexpected_changes=v.unexpected_position_changes)
                 if v.success:
                     tap_success = True
                     consecutive_missed_taps = 0
