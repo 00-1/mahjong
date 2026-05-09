@@ -1,0 +1,26 @@
+{"event": "run_start", "ts": "2026-05-09T14:17:18.035Z", "run_id": "run_20260509_141718_l08", "level": 8, "started_at": "2026-05-09T14:17:18Z", "min_wait": 0.3, "max_wait": 3.0, "max_tap_retries": 2}
+{"event": "decision", "ts": "2026-05-09T14:17:21.494Z", "step": 0, "reason": "TRIPLET", "tap": null, "tray": 1, "score": 8.0, "lookahead_used": false, "lookahead_value": null, "decide_ms": 1, "num_alternatives": 3}
+{"event": "occult_predict", "ts": "2026-05-09T14:17:23.209Z", "step": 0, "predictions_count": 3, "occult_ms": 1627, "high_confidence": 0}
+{"event": "triplet_burst", "ts": "2026-05-09T14:17:23.210Z", "step": 0, "tile": "dandelion", "taps": 3, "locations": ["(0,1)", "(3,2)", "(4,1)"]}
+{"event": "verify_burst", "ts": "2026-05-09T14:17:29.583Z", "step": 0, "success": false, "reason": "partial", "notes": "only 1/3 positions changed", "elapsed_sec": 1.3}
+{"event": "decision", "ts": "2026-05-09T14:17:29.588Z", "step": 1, "reason": "TRIPLET", "tap": null, "tray": 2, "score": 9.0, "lookahead_used": false, "lookahead_value": null, "decide_ms": 0, "num_alternatives": 3}
+{"event": "occult_predict", "ts": "2026-05-09T14:17:31.840Z", "step": 1, "predictions_count": 4, "occult_ms": 2168, "high_confidence": 0}
+{"event": "triplet_burst", "ts": "2026-05-09T14:17:31.841Z", "step": 1, "tile": "dandelion", "taps": 2, "locations": ["(3,2)", "(4,1)"]}
+{"event": "verify_burst", "ts": "2026-05-09T14:18:10.934Z", "step": 1, "success": true, "reason": "ok", "notes": "all 2 positions changed; tray tile_013 1 -> 0", "elapsed_sec": 3.55}
+{"event": "decision", "ts": "2026-05-09T14:18:10.938Z", "step": 2, "reason": "NOT_A_PUZZLE", "tap": null, "tray": 0, "score": null, "lookahead_used": null, "lookahead_value": null, "decide_ms": 0, "num_alternatives": 0}
+{"event": "occult_predict", "ts": "2026-05-09T14:18:22.166Z", "step": 2, "predictions_count": 21, "occult_ms": 11151, "high_confidence": 0}
+{"event": "not_a_puzzle", "ts": "2026-05-09T14:18:22.167Z", "step": 2, "consecutive": 1}
+{"event": "decision", "ts": "2026-05-09T14:18:29.120Z", "step": 3, "reason": "NOT_A_PUZZLE", "tap": null, "tray": 0, "score": null, "lookahead_used": null, "lookahead_value": null, "decide_ms": 0, "num_alternatives": 0}
+{"event": "occult_predict", "ts": "2026-05-09T14:18:49.275Z", "step": 3, "predictions_count": 21, "occult_ms": 20050, "high_confidence": 0}
+{"event": "not_a_puzzle", "ts": "2026-05-09T14:18:49.276Z", "step": 3, "consecutive": 2}
+{"event": "decision", "ts": "2026-05-09T14:18:56.150Z", "step": 4, "reason": "NOT_A_PUZZLE", "tap": null, "tray": 0, "score": null, "lookahead_used": null, "lookahead_value": null, "decide_ms": 0, "num_alternatives": 0}
+{"event": "occult_predict", "ts": "2026-05-09T14:19:16.480Z", "step": 4, "predictions_count": 21, "occult_ms": 20204, "high_confidence": 0}
+{"event": "not_a_puzzle", "ts": "2026-05-09T14:19:16.481Z", "step": 4, "consecutive": 3}
+{"event": "decision", "ts": "2026-05-09T14:19:23.400Z", "step": 5, "reason": "NOT_A_PUZZLE", "tap": null, "tray": 0, "score": null, "lookahead_used": null, "lookahead_value": null, "decide_ms": 0, "num_alternatives": 0}
+{"event": "occult_predict", "ts": "2026-05-09T14:19:43.447Z", "step": 5, "predictions_count": 21, "occult_ms": 19925, "high_confidence": 0}
+{"event": "not_a_puzzle", "ts": "2026-05-09T14:19:43.448Z", "step": 5, "consecutive": 4}
+{"event": "decision", "ts": "2026-05-09T14:19:50.353Z", "step": 6, "reason": "NOT_A_PUZZLE", "tap": null, "tray": 0, "score": null, "lookahead_used": null, "lookahead_value": null, "decide_ms": 1, "num_alternatives": 0}
+{"event": "occult_predict", "ts": "2026-05-09T14:20:10.659Z", "step": 6, "predictions_count": 21, "occult_ms": 20174, "high_confidence": 0}
+{"event": "not_a_puzzle", "ts": "2026-05-09T14:20:10.660Z", "step": 6, "consecutive": 5}
+{"event": "stop_by_heuristic", "ts": "2026-05-09T14:20:10.660Z", "step": 6, "outcome": "abandoned", "pre_npz_main": 14, "pre_npz_tray": 2}
+{"event": "run_end", "ts": "2026-05-09T14:20:10.665Z", "run_id": "run_20260509_141718_l08", "status": "abandoned", "reason": "5x_not_a_puzzle", "steps": 6, "level": 8, "duration_sec": 172.6, "level_win_rate": 0.1111111111111111}

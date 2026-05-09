@@ -207,6 +207,28 @@ Concrete instance: the **Challenge Again** button on the lose screen
 read as small y≈770 (suggesting phone y≈2310), but its actual full-res
 position was y=1948 — taps at 2310 / 2340 missed entirely.
 
+## (Fixed) Two AttributeError sources during triplet bursts
+
+Both surfaced as `'str' object has no attribute 'get'`. Added a
+`traceback` field to autoplay's exception emit so the next
+debugger doesn't have to instrument it again.
+
+1. `src/solver/economy.py: _compute_economies` —
+   `merge_occult_and_priors()` returns `dict[key]→str(tile_id)`, but
+   `_compute_economies` was unconditionally calling `.get()` on those
+   values. Added isinstance dispatch: str → take as tile_id with
+   confidence=1.0; dict → existing path; predicted_tile_id-attr
+   object → existing path.
+
+2. `scripts/autoplay.py: triplet_burst verify path` — was calling
+   `verify_triplet_burst(decision["state"], ...)` first as a fallback
+   before reading the recorded state.json. But `decision["state"]` is
+   the summary dict (`tray` is a list of label strings, not a list of
+   `{"tile_id": ...}` dicts). `verify._tray_tiles` then crashed on
+   `t.get("tile_id")`. Dropped the fallback call entirely — the
+   recorded `t<step>.state.json` is always present from `record_step`,
+   so we always have a real before-state to verify against.
+
 ## (Fixed) autoplay FileNotFoundError on state.json
 
 Earlier in this session autoplay crashed mid-run with

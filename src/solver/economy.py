@@ -80,8 +80,16 @@ def compute_economy(
     predicted_occult: Counter = Counter()
     if occult_predictions:
         for k, p in occult_predictions.items():
-            tid = getattr(p, "predicted_tile_id", None) if hasattr(p, "predicted_tile_id") else p.get("predicted_tile_id")
-            conf = getattr(p, "confidence", 0) if hasattr(p, "confidence") else p.get("confidence", 0)
+            if isinstance(p, str):
+                tid, conf = p, 1.0
+            elif hasattr(p, "predicted_tile_id"):
+                tid = getattr(p, "predicted_tile_id", None)
+                conf = getattr(p, "confidence", 0)
+            elif isinstance(p, dict):
+                tid = p.get("predicted_tile_id")
+                conf = p.get("confidence", 0)
+            else:
+                tid, conf = None, 0
             if tid and conf >= confidence_threshold:
                 predicted_occult[tid] += 1
 

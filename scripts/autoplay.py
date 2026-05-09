@@ -422,27 +422,22 @@ def main() -> int:
                     break
                 shot_path = shot_path_returned
 
-                # Verify
-                v = verify_triplet_burst(
-                    decision["state"] if isinstance(decision.get("state"), dict) else {},
-                    state_dict,
-                    [t["location"] for t in triplet_seq],
-                    decision["tile_id"],
-                )
-                # Note: decide()'s state summary doesn't have full main_board.
-                # Use the recorded state_dict from the previous step as 'before'.
-                # (The recorded step file is the actual before.)
+                # Verify against the full pre-tap state we just recorded.
+                # (decide()'s state summary has tray as a list of strings
+                # rather than a list of dicts, so verify_triplet_burst
+                # can't consume it directly.)
                 before_path = (
                     runs_dir / run_id / f"t{step:03d}.state.json"
                 )
+                before_full = {}
                 if before_path.exists():
                     with open(before_path) as f:
                         before_full = json.load(f)
-                    v = verify_triplet_burst(
-                        before_full, state_dict,
-                        [t["location"] for t in triplet_seq],
-                        decision["tile_id"],
-                    )
+                v = verify_triplet_burst(
+                    before_full, state_dict,
+                    [t["location"] for t in triplet_seq],
+                    decision["tile_id"],
+                )
                 log.emit("verify_burst", step=step,
                          success=v.success, reason=v.reason, notes=v.notes,
                          elapsed_sec=round(elapsed, 2))
@@ -565,7 +560,10 @@ def main() -> int:
         final_status = "abandoned"
         final_reason = "keyboard_interrupt"
     except Exception as exc:
-        log.emit("exception", step=step, msg=str(exc), type=type(exc).__name__)
+        import traceback
+        tb = traceback.format_exc(limit=12)
+        log.emit("exception", step=step, msg=str(exc),
+                 type=type(exc).__name__, traceback=tb)
         final_status = "abandoned"
         final_reason = f"exception:{type(exc).__name__}"
 

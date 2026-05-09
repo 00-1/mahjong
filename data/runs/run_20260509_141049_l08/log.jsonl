@@ -1,0 +1,5 @@
+{"event": "run_start", "ts": "2026-05-09T14:10:49.408Z", "run_id": "run_20260509_141049_l08", "level": 8, "started_at": "2026-05-09T14:10:49Z", "min_wait": 0.3, "max_wait": 3.0, "max_tap_retries": 2}
+{"event": "decision", "ts": "2026-05-09T14:10:53.257Z", "step": 0, "reason": "GAME_OVER", "tap": null, "tray": 7, "score": null, "lookahead_used": null, "lookahead_value": null, "decide_ms": 0, "num_alternatives": 0}
+{"event": "occult_predict", "ts": "2026-05-09T14:10:59.220Z", "step": 0, "predictions_count": 10, "occult_ms": 5868, "high_confidence": 0}
+{"event": "game_over_at_start", "ts": "2026-05-09T14:10:59.220Z", "step": 0, "msg": "screen was already game-over at run start; restart probably landed on stale lose screen"}
+{"event": "run_end", "ts": "2026-05-09T14:10:59.223Z", "run_id": "run_20260509_141049_l08", "status": "abandoned", "reason": "game_over_at_start", "steps": 0, "level": 8, "duration_sec": 9.8, "level_win_rate": 0.14285714285714285}

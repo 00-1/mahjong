@@ -1,0 +1,8 @@
+{
+  "run_id": "run_20260509_144944_l08",
+  "level": 8,
+  "started_at": "2026-05-09T14:49:44Z",
+  "last_step": 6,
+  "status": "abandoned",
+  "notes": "exception:AttributeError"
+}

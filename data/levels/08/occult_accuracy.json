@@ -1,14 +1,14 @@
 {
   "level": 8,
-  "total": 14,
-  "correct": 0,
+  "total": 37,
+  "correct": 3,
   "by_predicted": {
     "tile_005": {
-      "total": 4,
-      "correct": 0
+      "total": 7,
+      "correct": 2
     },
     "tile_011": {
-      "total": 1,
+      "total": 3,
       "correct": 0
     },
     "tile_002": {
@@ -16,15 +16,39 @@
       "correct": 0
     },
     "tile_009": {
-      "total": 4,
-      "correct": 0
+      "total": 5,
+      "correct": 1
     },
     "tile_007": {
-      "total": 1,
+      "total": 2,
       "correct": 0
     },
     "tile_004": {
       "total": 1,
+      "correct": 0
+    },
+    "tile_006": {
+      "total": 7,
+      "correct": 0
+    },
+    "tile_008": {
+      "total": 1,
+      "correct": 0
+    },
+    "tile_003": {
+      "total": 4,
+      "correct": 0
+    },
+    "tile_001": {
+      "total": 1,
+      "correct": 0
+    },
+    "tile_014": {
+      "total": 1,
+      "correct": 0
+    },
+    "tile_018": {
+      "total": 2,
       "correct": 0
     }
   },
@@ -34,32 +58,52 @@
       "correct": 0
     },
     "tile_012": {
-      "total": 3,
+      "total": 4,
       "correct": 0
     },
     "tile_001": {
-      "total": 2,
+      "total": 3,
       "correct": 0
     },
     "tile_013": {
-      "total": 2,
+      "total": 5,
       "correct": 0
     },
     "tile_006": {
-      "total": 1,
-      "correct": 0
-    },
-    "tile_003": {
       "total": 2,
       "correct": 0
     },
+    "tile_003": {
+      "total": 5,
+      "correct": 0
+    },
     "tile_008": {
-      "total": 1,
+      "total": 3,
       "correct": 0
     },
     "tile_007": {
-      "total": 1,
+      "total": 2,
       "correct": 0
+    },
+    "tile_004": {
+      "total": 2,
+      "correct": 0
+    },
+    "tile_005": {
+      "total": 3,
+      "correct": 2
+    },
+    "tile_010": {
+      "total": 3,
+      "correct": 0
+    },
+    "tile_002": {
+      "total": 2,
+      "correct": 0
+    },
+    "tile_009": {
+      "total": 1,
+      "correct": 1
     }
   },
   "confusion": {
@@ -73,22 +117,44 @@
     "tile_009->tile_003": 1,
     "tile_009->tile_008": 1,
     "tile_009->tile_007": 1,
-    "tile_007->tile_003": 1,
-    "tile_004->tile_013": 1
+    "tile_007->tile_003": 2,
+    "tile_004->tile_013": 1,
+    "tile_006->tile_004": 2,
+    "tile_008->tile_003": 1,
+    "tile_006->tile_010": 2,
+    "tile_003->tile_010": 1,
+    "tile_003->tile_013": 1,
+    "tile_003->tile_008": 1,
+    "tile_005->tile_002": 1,
+    "tile_011->tile_002": 1,
+    "tile_006->tile_012": 1,
+    "tile_001->tile_006": 1,
+    "tile_003->tile_007": 1,
+    "tile_011->tile_013": 1,
+    "tile_006->tile_003": 1,
+    "tile_006->tile_013": 1,
+    "tile_014->tile_001": 1,
+    "tile_018->tile_005": 1,
+    "tile_018->tile_008": 1
   },
   "by_confidence_bucket": {
     "med": {
-      "total": 2,
+      "total": 9,
       "correct": 0,
       "accuracy": 0.0
     },
     "low": {
-      "total": 12,
+      "total": 26,
+      "correct": 3,
+      "accuracy": 0.11538461538461539
+    },
+    "high": {
+      "total": 2,
       "correct": 0,
       "accuracy": 0.0
     }
   },
-  "method_top_agrees_when_correct": 0,
-  "method_top_agrees_when_wrong": 0,
-  "accuracy": 0.0
+  "method_top_agrees_when_correct": 1,
+  "method_top_agrees_when_wrong": 1,
+  "accuracy": 0.08108108108108109
 }

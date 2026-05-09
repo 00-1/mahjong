@@ -1,0 +1,31 @@
+[
+  {
+    "anchor_key": [
+      "main_board",
+      4,
+      0
+    ],
+    "sample_cx": 230,
+    "sample_cy": 1200,
+    "offset": [
+      75,
+      0
+    ],
+    "predicted_tile_id": "tile_002",
+    "confidence": 0.07666666666666666,
+    "method_scores": {
+      "phash_top": "tile_014",
+      "phash_score": 116.0,
+      "ncc_top": "tile_010",
+      "ncc_score": 0.8656056970357895,
+      "hist_top": "tile_007",
+      "hist_score": 6.517692945606328,
+      "orb_top": "tile_005",
+      "orb_top_score": 0.015,
+      "v_mean": 82.9,
+      "sat_frac": 1.0,
+      "cream_frac": 0.0,
+      "margin": 0.227
+    }
+  }
+]

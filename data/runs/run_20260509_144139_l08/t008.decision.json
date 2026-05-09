@@ -1,0 +1,90 @@
+{
+  "should_stop": false,
+  "reason_code": "TRIPLET",
+  "tap": {
+    "x": 406,
+    "y": 692,
+    "location": "(0,2)"
+  },
+  "tile_id": "tile_010",
+  "label": "kite",
+  "confidence": 0.95,
+  "score": 8.0,
+  "lookahead_used": false,
+  "lookahead_expected_value": null,
+  "reason": "3x kite: tap (0,2) + (4,0) + (4,2)",
+  "alternatives": [
+    {
+      "x": 138,
+      "y": 1052,
+      "location": "(4,0)",
+      "tile_id": "tile_010",
+      "label": "kite",
+      "score": 8.0,
+      "reason": "3x kite: tap (0,2) + (4,0) + (4,2)"
+    },
+    {
+      "x": 406,
+      "y": 1052,
+      "location": "(4,2)",
+      "tile_id": "tile_010",
+      "label": "kite",
+      "score": 8.0,
+      "reason": "3x kite: tap (0,2) + (4,0) + (4,2)"
+    },
+    {
+      "x": 808,
+      "y": 981,
+      "location": "(4,4)",
+      "tile_id": "tile_013",
+      "label": "dandelion",
+      "score": -1.2857142857142856,
+      "reason": "adds to tray; 1 already in tray, 2 total visible"
+    }
+  ],
+  "triplet_sequence": [
+    {
+      "x": 406,
+      "y": 692,
+      "location": "(0,2)"
+    },
+    {
+      "x": 138,
+      "y": 1052,
+      "location": "(4,0)"
+    },
+    {
+      "x": 406,
+      "y": 1052,
+      "location": "(4,2)"
+    }
+  ],
+  "state": {
+    "level": 8,
+    "image_size": [
+      1080,
+      2400
+    ],
+    "tray_filled": 1,
+    "tray": [
+      "dandelion"
+    ],
+    "main_board_count": 10,
+    "queue_count": 2,
+    "tile_counts": {
+      "bee": 2,
+      "kite": 3,
+      "sunflower": 2,
+      "plumeria": 1,
+      "lantern": 1,
+      "dandelion": 2,
+      "swallow": 1,
+      "lotus": 1
+    },
+    "looks_like_puzzle": true
+  },
+  "image_size": {
+    "w": 1080,
+    "h": 2400
+  }
+}

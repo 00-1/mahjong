@@ -1,0 +1,78 @@
+{
+  "should_stop": false,
+  "reason_code": "EXPLORE",
+  "tap": {
+    "x": 272,
+    "y": 693,
+    "location": "(0,1)"
+  },
+  "tile_id": "tile_008",
+  "label": "lotus",
+  "confidence": 0.268,
+  "score": -4.643,
+  "lookahead_used": true,
+  "lookahead_expected_value": -1000.2,
+  "reason": "adds to tray; 0 already in tray, 1 total visible",
+  "alternatives": [
+    {
+      "x": 298,
+      "y": 1341,
+      "location": "queue:left_lower",
+      "tile_id": "tile_011",
+      "label": "paper_crane",
+      "score": -2.642857142857143,
+      "reason": "adds to tray; 0 already in tray, 2 total visible"
+    },
+    {
+      "x": 822,
+      "y": 1341,
+      "location": "queue:right_lower",
+      "tile_id": "tile_011",
+      "label": "paper_crane",
+      "score": -2.642857142857143,
+      "reason": "adds to tray; 0 already in tray, 2 total visible"
+    },
+    {
+      "x": 406,
+      "y": 981,
+      "location": "(3,2)",
+      "tile_id": "tile_005",
+      "label": "pinwheel",
+      "score": -3.142857142857143,
+      "reason": "adds to tray; 0 already in tray, 2 total visible"
+    }
+  ],
+  "triplet_sequence": null,
+  "state": {
+    "level": 8,
+    "image_size": [
+      1080,
+      2400
+    ],
+    "tray_filled": 4,
+    "tray": [
+      "dandelion",
+      "dandelion",
+      "plumeria",
+      "swallow"
+    ],
+    "main_board_count": 7,
+    "queue_count": 2,
+    "tile_counts": {
+      "lotus": 1,
+      "pink_daisy": 1,
+      "lantern": 1,
+      "pinwheel": 2,
+      "blue_butterfly": 1,
+      "swallow": 2,
+      "paper_crane": 2,
+      "dandelion": 2,
+      "plumeria": 1
+    },
+    "looks_like_puzzle": true
+  },
+  "image_size": {
+    "w": 1080,
+    "h": 2400
+  }
+}
