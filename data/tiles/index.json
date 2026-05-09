@@ -140,7 +140,8 @@
         "tiles/samples/tile_012_00.jpg",
         "tiles/samples/tile_012_01.jpg",
         "tiles/samples/tile_012_02.jpg",
-        "tiles/samples/tile_012_03.jpg"
+        "tiles/samples/tile_012_03.jpg",
+        "tiles/samples/tile_012_04.jpg"
       ],
       "first_seen": "data/screenshots/level_05/run_01_loss.jpg"
     },
@@ -206,15 +207,6 @@
         "tiles/samples/tile_018_00.jpg"
       ],
       "first_seen": "/data/data/com.termux/files/home/snaps/autoplay/autoplay_wait_1778338099395_1.png"
-    },
-    {
-      "tile_id": "tile_019",
-      "phash": "be41c9b4e27c356bc5ec7a4be2468f1f19764a5139b1b1e46b17e1a11310566e",
-      "label": null,
-      "samples": [
-        "tiles/samples/tile_019_00.jpg"
-      ],
-      "first_seen": "/data/data/com.termux/files/home/snaps/autoplay/autoplay_wait_1778342120656_1.png"
     }
   ]
 }

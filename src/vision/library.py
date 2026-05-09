@@ -66,6 +66,31 @@ class TileLibrary:
         if self.index_path.exists():
             data = json.loads(self.index_path.read_text())
             self.entries = [TileEntry(**e) for e in data.get("entries", [])]
+        # Cache per-entry sample-phash list for multi-sample distance.
+        # Computed lazily on first match request.
+        self._sample_phashes: dict[str, list[imagehash.ImageHash]] = {}
+
+    def _sample_hashes(self, entry: TileEntry) -> list[imagehash.ImageHash]:
+        """All phashes for this entry: the canonical phash plus any saved
+        sample crops. Used to compute multi-sample matching distance — a
+        new crop matches the entry if it's close to ANY of the entry's
+        samples, not just the entry's primary phash. This captures
+        same-tile variation across runs / contexts (tray vs main, lighting
+        differences, depth-2 vs depth-1 background)."""
+        if entry.tile_id in self._sample_phashes:
+            return self._sample_phashes[entry.tile_id]
+        hashes = [entry.hash_obj()]
+        for sp in entry.samples:
+            full = self.root.parent / sp if not Path(sp).is_absolute() else Path(sp)
+            try:
+                bgr = cv2.imread(str(full))
+                if bgr is None:
+                    continue
+                hashes.append(phash_of(bgr))
+            except Exception:
+                continue
+        self._sample_phashes[entry.tile_id] = hashes
+        return hashes
 
     def save(self) -> None:
         self.root.mkdir(parents=True, exist_ok=True)
@@ -88,9 +113,14 @@ class TileLibrary:
         was_added=True means we registered a new tile.
         hamming_distance is 0 for new entries."""
         h = phash_of(bgr_crop)
+        # Multi-sample distance: for each entry, take min distance to any
+        # of its sample crops (not just the canonical phash). Catches
+        # same-tile crops that drift in pHash space across contexts —
+        # tray vs main_board, depth-2 reveals with peeking neighbours,
+        # subtle scaling/lighting changes between runs.
         best: tuple[TileEntry, int] | None = None
         for e in self.entries:
-            d = h - e.hash_obj()
+            d = min((h - hh) for hh in self._sample_hashes(e))
             if best is None or d < best[1]:
                 best = (e, d)
 
@@ -99,6 +129,9 @@ class TileLibrary:
             if len(entry.samples) < MAX_SAMPLES_PER_TILE:
                 sample_path = self._save_sample(bgr_crop, entry.tile_id, len(entry.samples))
                 entry.samples.append(sample_path)
+                # Invalidate the cached sample-hash list — new sample changes the
+                # min-distance for this entry.
+                self._sample_phashes.pop(entry.tile_id, None)
                 self.save()
             return entry, best[1], False
 

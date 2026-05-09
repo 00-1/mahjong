@@ -132,6 +132,16 @@ def main() -> int:
                         "decide() returns UNRECOVERABLE and the run ends "
                         "as 'lost' — saves continuing to tap into the "
                         "inevitable game-over. Default -500.")
+    p.add_argument("--surrender-step-floor", type=int, default=2,
+                   help="Earliest step at which surrender is allowed. "
+                        "Surrendering at step 0 is dangerous because the "
+                        "initial snap may be sparse (post-restart leak, "
+                        "mid-render). Default 2.")
+    p.add_argument("--surrender-min-main-board", type=int, default=10,
+                   help="Minimum visible main_board tile count required to "
+                        "trust the lookahead's surrender decision. Below "
+                        "this, the state is treated as extraction-suspect "
+                        "and we play on rather than surrender. Default 10.")
     p.add_argument("--posterior-min-confidence", type=float, default=0.4,
                    help="Minimum posterior probability required to commit "
                         "a Bayesian reveal MAP estimate to the lookahead "
@@ -293,6 +303,15 @@ def main() -> int:
                     ROOT / "data" / "extractions" / f"level_{args.level:02d}"
                     / shot_path.stem / "state.json"
                 )
+            # Surrender is gated on having actually played at least one tap
+            # AND the state extraction looking healthy. If we're at step 0
+            # we haven't tried anything yet — the lookahead's pessimism may
+            # be reflecting a sparse/broken initial state (e.g. mid-game
+            # pickup from a failed restart, or a snap before tiles fully
+            # rendered). Surrendering there would mark the level "lost"
+            # without a single tap. After step >= surrender_step_floor and
+            # if the board has plenty of visible tiles, surrender is fine.
+            allow_surrender_now = step >= args.surrender_step_floor
             decide_t0 = time.time()
             decision = decide_fn(
                 state_json_path,
@@ -304,6 +323,8 @@ def main() -> int:
                 inventory=inventory,
                 cleared_history=dict(cleared_history),
                 surrender_threshold=args.surrender_threshold,
+                surrender_min_main_board=args.surrender_min_main_board,
+                allow_surrender=allow_surrender_now,
             )
             decide_ms = int((time.time() - decide_t0) * 1000)
             record_step(
