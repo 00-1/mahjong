@@ -36,11 +36,17 @@ class Move:
 
 
 def _tappable_faces(state: BoardState) -> list[TileFace]:
-    """All currently tappable tile faces (top of stack, including queue heads)."""
+    """All currently tappable tile faces — only d1 main_board cells
+    (top of stack), plus queue heads. d2 cells in main_board are
+    partial-occult identifications (we know what's there) but they
+    aren't directly tappable until the d1 above is removed."""
     faces: list[TileFace] = []
     for c in state.main_board:
-        if c.tile_id is not None:
-            faces.append(TileFace(c.tile_id, f"({c.row},{c.col})"))
+        if c.tile_id is None:
+            continue
+        if (c.stack_depth or 1) >= 2:
+            continue  # partial-occult d2 — not tappable yet
+        faces.append(TileFace(c.tile_id, f"({c.row},{c.col})"))
     for q in state.queues:
         if q.tile_id is not None:
             faces.append(TileFace(q.tile_id, f"queue:{q.queue_id}"))

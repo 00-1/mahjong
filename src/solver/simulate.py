@@ -169,12 +169,20 @@ def simulate_tap(
 
 
 def candidate_locations(state: BoardState) -> list[str]:
-    """All currently-tappable locations: top-of-stack main_board cells
-    and queue heads."""
+    """All currently-tappable locations: only d1 (top-of-stack)
+    main_board cells, plus queue heads. d2 cells are recorded for
+    state-aware reasoning (they tell us what's underneath) but aren't
+    tappable until the d1 above is removed."""
     locations = []
     for c in state.main_board:
-        if c.tile_id is not None:
-            locations.append(f"({c.row},{c.col})")
+        if c.tile_id is None:
+            continue
+        # stack_depth=1 means d1 (top of stack, tappable). d2 is
+        # partial-occult — visible but blocked. Skip those for tap
+        # candidates.
+        if (c.stack_depth or 1) >= 2:
+            continue
+        locations.append(f"({c.row},{c.col})")
     for q in state.queues:
         if q.tile_id is not None:
             locations.append(f"queue:{q.queue_id}")

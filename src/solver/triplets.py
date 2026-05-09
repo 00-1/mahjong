@@ -40,13 +40,16 @@ class TripletCandidate:
 
 def find_triplets(state: BoardState) -> list[TripletCandidate]:
     """Find all currently tappable triplets (3 visible faces of the same
-    tile, where 'visible' means a top-of-stack main cell, a queue head, or
-    a tray slot)."""
+    tile, where 'visible' means a top-of-stack (d1) main cell, a queue
+    head, or a tray slot). d2 partial-occult cells are NOT included
+    here — they're known but not yet tappable."""
     by_tile: dict[str, list[TileFace]] = defaultdict(list)
 
     for c in state.main_board:
         if c.tile_id is None:
             continue
+        if (c.stack_depth or 1) >= 2:
+            continue  # partial-occult d2 — not directly tappable
         by_tile[c.tile_id].append(TileFace(c.tile_id, f"({c.row},{c.col})"))
     for q in state.queues:
         if q.tile_id is None:

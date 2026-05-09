@@ -137,6 +137,40 @@ def main(image_path: Path, level: int, out_dir: Path | None, tiles_dir: Path, re
     queue_cells.sort(key=lambda q: q.queue_id)
     tray_slots.sort(key=lambda t: t.slot)
 
+    # Partial-occult identification: for every main_board anchor NOT
+    # covered by a bright detection, try ORB-feature matching to ID
+    # the dim/partial tile face. Only commit high+med confidence
+    # results — they're qualitatively different from priors (we
+    # actually saw the dim face) so worth recording in state.json
+    # as additional MainCells with stack_depth=2 + provenance.
+    from src.vision.partial_occult import detect_partial_occult
+    bright_keys = {("main_board", c.row, c.col) for c in main_cells}
+    partial_dets = detect_partial_occult(bgr, library, template, bright_keys)
+    n_partial_committed = 0
+    for key, pd in partial_dets.items():
+        if pd.confidence not in ("high", "med"):
+            continue
+        # Locate the anchor for the bbox
+        anchor = next((a for a in template.anchors
+                       if a.zone == "main_board"
+                       and a.row == key[1] and a.col == key[2]), None)
+        if anchor is None:
+            continue
+        bb = (
+            anchor.cx - template.tile_w // 2,
+            anchor.cy - template.tile_h // 2,
+            template.tile_w,
+            template.tile_h,
+        )
+        main_cells.append(MainCell(
+            row=key[1], col=key[2], bbox=bb,
+            tile_id=pd.tile_id,
+            stack_depth=2,
+            tile_id_distance=None,  # ORB doesn't produce a distance comparable to pHash
+        ))
+        n_partial_committed += 1
+    main_cells.sort(key=lambda c: (c.row, c.col))
+
     state = BoardState(
         level=level,
         image=image_rel,
@@ -178,7 +212,7 @@ def main(image_path: Path, level: int, out_dir: Path | None, tiles_dir: Path, re
                         "unmatched": ump}, indent=2)
         )
 
-    click.echo(f"main_board cells: {len(main_cells)}")
+    click.echo(f"main_board cells: {len(main_cells)} (incl {n_partial_committed} partial-occult d2)")
     click.echo(f"queue heads:      {len(queue_cells)}")
     click.echo(f"tray slots:       {len(tray_slots)}")
     click.echo(f"unmatched:        {len(unmatched)}")
