@@ -335,29 +335,61 @@ def bayesian_reveal_posterior(
 
 def verify_bayesian_predictions(
     predictions: dict[tuple, str],
-    new_state: dict,
+    before_state: dict,
+    after_state: dict,
+    tapped_keys: list[tuple] | None = None,
 ) -> list[dict]:
-    """Compare last step's MAP estimates to the now-revealed bright
-    tiles in new_state. Returns one comparison per anchor that was
-    predicted AND is now visible. Used for accuracy tracking.
+    """Compare last step's MAP estimates to the genuinely-revealed
+    tiles in after_state. A prediction at anchor K is verifiable iff
+    K was actually TAPPED between the prediction and the verification
+    snap — only then is the post-tap tile a true d2 reveal that we
+    can score the d2-prediction against. If K wasn't tapped, the tile
+    at K post-snap is just the same d1 we predicted d2 for; comparing
+    them is wrong.
+
+    Caller passes tapped_keys (collected from the tap log between the
+    two states). If None, we infer from before/after diff: any anchor
+    whose tile_id changed without being cleared from the board.
 
     Output entries match the schema of verify_anchor_predictions
     (occult.py) so they can flow through the same downstream
     aggregators."""
-    main_lookup = {
+    before_main = {
         ("main_board", c["row"], c["col"]): c.get("tile_id")
-        for c in new_state.get("main_board", [])
+        for c in before_state.get("main_board", []) if c.get("tile_id")
     }
-    queue_lookup = {
+    after_main = {
+        ("main_board", c["row"], c["col"]): c.get("tile_id")
+        for c in after_state.get("main_board", [])
+    }
+    before_queue = {
         ("queue", q["queue_id"]): q.get("tile_id")
-        for q in new_state.get("queues", [])
+        for q in before_state.get("queues", []) if q.get("tile_id")
     }
-    full_lookup = {**main_lookup, **queue_lookup}
+    after_queue = {
+        ("queue", q["queue_id"]): q.get("tile_id")
+        for q in after_state.get("queues", [])
+    }
+    before_lookup = {**before_main, **before_queue}
+    after_lookup = {**after_main, **after_queue}
+
+    if tapped_keys is None:
+        # Infer from diff: anchor was tapped iff its tile_id changed AND
+        # the after value isn't None (None means cleared, not revealed).
+        tapped_keys = [
+            k for k, before_tid in before_lookup.items()
+            if after_lookup.get(k) is not None
+            and after_lookup[k] != before_tid
+        ]
+    tapped_set = set(tapped_keys)
+
     out: list[dict] = []
     for key, predicted_tid in predictions.items():
-        actual = full_lookup.get(key)
+        if key not in tapped_set:
+            continue  # not tapped between snaps — d2 hasn't been revealed
+        actual = after_lookup.get(key)
         if actual is None:
-            continue
+            continue  # cleared (triplet) — can't compare
         out.append({
             "anchor_key": list(key),
             "predicted_tile_id": predicted_tid,

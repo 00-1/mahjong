@@ -39,7 +39,6 @@ def decide(
     inventory: dict | None = None,
     cleared_history: dict | None = None,
     surrender_threshold: float = -500.0,
-    surrender_min_main_board: int = 10,
     allow_surrender: bool = True,
 ) -> dict:
     if label_fn is None:
@@ -131,26 +130,19 @@ def decide(
         best = moves[0]
 
     # Surrender guard: if lookahead unambiguously says we're losing within
-    # depth (every candidate's best continuation is below surrender_threshold),
-    # stop tapping. Continuing would just burn tray slots and drag the run
-    # to the inevitable game-over modal.
+    # depth (every continuation falls below surrender_threshold), stop
+    # tapping. Continuing would just burn tray slots and drag the run to
+    # the inevitable game-over modal.
     #
-    # Two safety constraints to avoid spurious surrender:
-    # 1) Vision-extraction sanity: refuse surrender if the board has fewer
-    #    than `surrender_min_main_board` visible tiles. Sparse extractions
-    #    happen on post-restart "still-in-prior-attempt" screens and on
-    #    bad snaps — surrendering there throws away a winnable position
-    #    because the planner is reasoning about an under-extracted state.
-    # 2) Caller-controlled (via `allow_surrender`): autoplay sets this
-    #    False at step 0 when there's no played history yet. Without
-    #    this, a single broken initial snap can mark the run "lost"
-    #    before any tap.
-    surrender_main_board_count = sum(
-        1 for c in state.main_board if c.tile_id is not None
-    )
-    state_too_sparse = surrender_main_board_count < surrender_min_main_board
+    # The "is it safe to surrender NOW" decision is delegated to the
+    # caller via `allow_surrender`. autoplay.py uses that to encode:
+    #   - "haven't played enough yet to trust the lookahead" (step floor)
+    #   - "vision is suspect (sparse main_board) AND we're early in the
+    #      run, so the lookahead might be reasoning about a broken
+    #      extraction"
+    # These checks live in autoplay because it has the full step/state
+    # context. decide() just respects the bool.
     if (allow_surrender
-            and not state_too_sparse
             and lookahead_used and lookahead_expected_value is not None
             and lookahead_expected_value <= surrender_threshold):
         return {

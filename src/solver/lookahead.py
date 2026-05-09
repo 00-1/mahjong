@@ -103,6 +103,16 @@ def state_value(
     score = 0.0
     all_tiles = set(visible_count) | set(tray_per_tile)
     dead_tray_tiles = 0
+    # Tray-pair-completion bonus: when tray is high (≥4), strongly
+    # reward states where a tray-pair (count=2 of some tile) has the
+    # third instance VISIBLE on the board. Those are tray-completing
+    # taps that drop tray by 2 net (3 in tray → 0 after auto-clear).
+    # Without this bonus the +5 "near-triplet seed" reward is a flat
+    # constant whether or not the third instance is reachable; the
+    # planner can pick a "near-triplet seed" that's actually unreachable
+    # over a different one whose third tile is right there. Targets
+    # the tray-pair-jam loss pattern explicitly.
+    high_tray = tf >= 4
     for tid in all_tiles:
         v = visible_count.get(tid, 0)
         t = tray_per_tile.get(tid, 0)
@@ -112,6 +122,11 @@ def state_value(
             score += 5.0  # triplet realisable somewhere in remaining inventory
         if t == 2:
             score += 5.0  # near-triplet seed
+            if v >= 1:
+                # Third instance is visible — this is a CONCRETE finish
+                # for a tray pair, not a hopeful one.
+                bonus = 20.0 if high_tray else 5.0
+                score += bonus
         elif t == 1:
             score += 1.0  # versatile seed
         if v == 1 and t == 0 and remaining_total < 3:

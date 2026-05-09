@@ -108,6 +108,7 @@ def adaptive_wait_for_change(
     min_wait: float = 0.3,
     max_wait: float = 3.0,
     poll_interval: float = 0.25,
+    require_stable_for: float = 0.0,
 ) -> tuple[dict | None, tuple[int, int] | None, float, Path | None]:
     """Poll for state change after a tap. Returns (after_state, image_size,
     elapsed_sec, shot_path). shot_path is the file whose state was returned
@@ -119,6 +120,12 @@ def adaptive_wait_for_change(
     the shot_dir for the latest .png and pick up an orphan whose extract
     failed, causing a downstream FileNotFoundError on state.json.
 
+    require_stable_for: if > 0, after detecting a state change we keep
+    polling until the state has remained the same for this many seconds.
+    Critical for triplet bursts: 3 taps + auto-clear takes ~1.5s of
+    animations, and returning on the first observed change can capture a
+    half-completed mid-burst state. Single-tap callers should keep this 0.
+
     Saves intermediate snap PNGs as autoplay_wait_*.png — they're temporary
     debugging aids; pruned after run end if you want.
     """
@@ -128,14 +135,26 @@ def adaptive_wait_for_change(
     last_state: dict | None = None
     last_size: tuple[int, int] | None = None
     last_good_shot: Path | None = None
+    # Stability tracking: when require_stable_for > 0
+    candidate_sig: tuple | None = None
+    candidate_since: float = 0.0
     while elapsed <= max_wait:
         snap_idx += 1
         shot_path = shot_dir / f"autoplay_wait_{int(time.time()*1000)}_{snap_idx}.png"
         state, size = snap_and_extract(device_arg, shot_path, level)
         if state is not None:
             last_state, last_size, last_good_shot = state, size, shot_path
-            if state_signature(state) != before_sig:
-                return state, size, elapsed, shot_path
+            sig = state_signature(state)
+            if sig != before_sig:
+                if require_stable_for <= 0:
+                    return state, size, elapsed, shot_path
+                # Stability mode: confirm sig has held for require_stable_for seconds.
+                if sig == candidate_sig:
+                    if elapsed - candidate_since >= require_stable_for:
+                        return state, size, elapsed, shot_path
+                else:
+                    candidate_sig = sig
+                    candidate_since = elapsed
         time.sleep(poll_interval)
         elapsed += poll_interval
     return last_state, last_size, elapsed, last_good_shot

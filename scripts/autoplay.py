@@ -140,9 +140,23 @@ def main() -> int:
                         "mid-render). Default 2.")
     p.add_argument("--surrender-min-main-board", type=int, default=10,
                    help="Minimum visible main_board tile count required to "
-                        "trust the lookahead's surrender decision. Below "
-                        "this, the state is treated as extraction-suspect "
-                        "and we play on rather than surrender. Default 10.")
+                        "trust the lookahead's surrender decision. Only "
+                        "enforced during the early grace window (see "
+                        "--surrender-sparse-grace) — beyond that, the "
+                        "main_board count drops naturally as triplets "
+                        "clear and shouldn't block surrender. Default 10.")
+    p.add_argument("--surrender-sparse-grace", type=int, default=5,
+                   help="Number of steps after surrender_step_floor during "
+                        "which a sparse main_board still vetoes surrender. "
+                        "After step_floor + grace, surrender is purely a "
+                        "lookahead-EV decision. Default 5.")
+    p.add_argument("--burst-stability-window", type=float, default=0.6,
+                   help="After a triplet burst, require the state to have "
+                        "remained unchanged for this many seconds before "
+                        "considering it the post-burst final state. "
+                        "Without this, a snap mid-animation can show only "
+                        "1-2 of the 3 burst taps having resolved. "
+                        "Default 0.6.")
     p.add_argument("--posterior-min-confidence", type=float, default=0.4,
                    help="Minimum posterior probability required to commit "
                         "a Bayesian reveal MAP estimate to the lookahead "
@@ -235,6 +249,8 @@ def main() -> int:
     last_dim_predictions: list = []  # for verifying against next bright state (--learn-dim)
     last_occult_predictions: dict = {}  # anchor-keyed predictions (--learn-occult)
     last_bayesian_predictions: dict = {}  # anchor-keyed Bayesian MAP estimates (verified next step)
+    last_state_at_prediction: dict | None = None  # the state the predictions were made against
+    last_tapped_keys: list = []  # anchor keys actually tapped this iteration (for verify)
     run_started = time.time()
     levels_root = ROOT / "data" / "levels"
     run_root = runs_dir / run_id
@@ -303,14 +319,20 @@ def main() -> int:
                 from src.solver.economy import (
                     bayesian_reveal_posterior, map_estimates, load_anchor_priors,
                 )
-                # Verify last step's Bayesian predictions against this
-                # step's now-bright state, then aggregate accuracy.
-                if last_bayesian_predictions:
+                # Verify last step's Bayesian predictions, but ONLY for
+                # anchors that were genuinely tapped between the
+                # prediction and now. Predictions for non-tapped anchors
+                # would compare predicted-d2 to actual-d1 (always wrong).
+                # See economy.verify_bayesian_predictions for details.
+                if last_bayesian_predictions and last_state_at_prediction is not None:
                     from src.solver.economy import (
                         verify_bayesian_predictions, aggregate_bayesian_accuracy,
                     )
                     bay_comps = verify_bayesian_predictions(
-                        last_bayesian_predictions, state_dict,
+                        last_bayesian_predictions,
+                        before_state=last_state_at_prediction,
+                        after_state=state_dict,
+                        tapped_keys=last_tapped_keys,
                     )
                     if bay_comps:
                         bcorrect = sum(1 for c in bay_comps if c["correct"])
@@ -337,8 +359,12 @@ def main() -> int:
                                  {"key": list(k), "tid": t}
                                  for k, t in list((occult_for_solver or {}).items())[:5]
                              ])
-                    # Stash for next-step verification.
+                    # Stash for next-step verification: predictions plus
+                    # the state they were made against (so we can compare
+                    # against the *new* state).
                     last_bayesian_predictions = dict(occult_for_solver or {})
+                    last_state_at_prediction = state_dict
+                    last_tapped_keys = []  # filled in after the tap fires
                     if not occult_for_solver:
                         occult_for_solver = None
             state_json_path = (
@@ -360,15 +386,28 @@ def main() -> int:
                     ROOT / "data" / "extractions" / f"level_{args.level:02d}"
                     / shot_path.stem / "state.json"
                 )
-            # Surrender is gated on having actually played at least one tap
-            # AND the state extraction looking healthy. If we're at step 0
-            # we haven't tried anything yet — the lookahead's pessimism may
-            # be reflecting a sparse/broken initial state (e.g. mid-game
-            # pickup from a failed restart, or a snap before tiles fully
-            # rendered). Surrendering there would mark the level "lost"
-            # without a single tap. After step >= surrender_step_floor and
-            # if the board has plenty of visible tiles, surrender is fine.
-            allow_surrender_now = step >= args.surrender_step_floor
+            # Surrender gating logic:
+            #   Step < surrender_step_floor: never surrender. We haven't
+            #     played enough taps to trust that the lookahead's pessimism
+            #     reflects a real state (could be a broken initial extract,
+            #     a post-restart leak with tray=N, etc).
+            #   Step >= surrender_step_floor: surrender iff lookahead says
+            #     terminal-loss. The exception was "if main_board is sparse,
+            #     don't surrender" — but that check fired wrongly mid-game
+            #     when the board naturally cleared down to 7-8 visible tiles.
+            #     We now ONLY apply that sparse-state veto during the early
+            #     window (step < surrender_step_floor + sparse_grace_steps).
+            current_main_count = sum(
+                1 for c in state_dict.get("main_board", []) if c.get("tile_id")
+            )
+            in_sparse_grace = step < (args.surrender_step_floor + args.surrender_sparse_grace)
+            state_is_suspect = (
+                in_sparse_grace
+                and current_main_count < args.surrender_min_main_board
+            )
+            allow_surrender_now = (
+                step >= args.surrender_step_floor and not state_is_suspect
+            )
             decide_t0 = time.time()
             decision = decide_fn(
                 state_json_path,
@@ -380,7 +419,6 @@ def main() -> int:
                 inventory=inventory,
                 cleared_history=dict(cleared_history),
                 surrender_threshold=args.surrender_threshold,
-                surrender_min_main_board=args.surrender_min_main_board,
                 allow_surrender=allow_surrender_now,
             )
             decide_ms = int((time.time() - decide_t0) * 1000)
@@ -548,6 +586,12 @@ def main() -> int:
                     taps=len(triplet_seq),
                     locations=[t["location"] for t in triplet_seq],
                 )
+                # Track which anchor keys were tapped — used by next-step
+                # bayesian verifier to filter to actually-revealed anchors.
+                last_tapped_keys = [
+                    _location_to_anchor_key(t["location"]) for t in triplet_seq
+                ]
+                last_tapped_keys = [k for k in last_tapped_keys if k is not None]
                 burst_ok = True
                 for t in triplet_seq:
                     if not adb_tap(device_arg, t["x"], t["y"]):
@@ -560,12 +604,19 @@ def main() -> int:
                     final_reason = "burst_tap_failed"
                     break
 
-                # Wait for the auto-clear animation, then re-snap
+                # Wait for the auto-clear animation, then re-snap.
+                # Bursts fire 3 taps + animation; require_stable_for makes
+                # the wait return only when the state has settled — i.e.
+                # we've captured the post-clear final state, not a
+                # mid-animation snapshot. Without this, ~28% of bursts
+                # appeared "incomplete" because the snap caught after
+                # only 1-2 of the 3 taps had visually resolved.
                 before_sig = state_signature(state_dict)
                 state_dict, image_size, elapsed, shot_path_returned = adaptive_wait_for_change(
                     device_arg, args.shot_dir, args.level, before_sig,
                     min_wait=args.min_wait + args.triplet_extra_wait,
                     max_wait=args.max_wait + args.triplet_extra_wait,
+                    require_stable_for=args.burst_stability_window,
                 )
                 if state_dict is None or shot_path_returned is None:
                     log.emit("error", step=step, msg="snap failed after triplet burst")
@@ -615,6 +666,10 @@ def main() -> int:
                 final_status = "abandoned"
                 final_reason = "no_tap_in_decision"
                 break
+
+            # Track for next-step bayesian verify
+            single_key = _location_to_anchor_key(tap.get("location", ""))
+            last_tapped_keys = [single_key] if single_key else []
 
             x, y = tap["x"], tap["y"]
             tap_attempts = 0
@@ -750,6 +805,22 @@ def main() -> int:
     )
     log.close()
     return {"won": 0, "lost": 1, "abandoned": 2}.get(final_status, 2)
+
+
+def _location_to_anchor_key(loc: str) -> tuple | None:
+    """Convert a location string ("(r,c)" or "queue:<id>") to the
+    tuple key used in occult_predictions / verify maps."""
+    if not loc:
+        return None
+    if loc.startswith("("):
+        try:
+            r, c = [int(x) for x in loc.strip("()").split(",")]
+            return ("main_board", r, c)
+        except (ValueError, AttributeError):
+            return None
+    if loc.startswith("queue:"):
+        return ("queue", loc.split(":", 1)[1])
+    return None
 
 
 def _latest_shot(shot_dir: Path, prefix: str, level: int | None = None) -> Path:
