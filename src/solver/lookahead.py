@@ -1,0 +1,192 @@
+"""Multi-step lookahead solver.
+
+For each candidate move, simulate the resulting state, recursively look
+ahead to a bounded depth, evaluate leaf states, pick the move that leads
+to the best expected outcome.
+
+This is the strategic upgrade over greedy `suggest_moves`: instead of
+always clearing the easiest immediate triplet, the solver considers
+whether clearing it now is actually optimal, or whether holding off
+keeps more triplets available later.
+
+Search is depth-limited (default depth 3). Without occult predictions,
+unknown reveals are treated as "position becomes empty" — conservative
+but safe.
+
+With occult predictions, simulation becomes deterministic-ish:
+predicted reveals are used. The search becomes much more powerful
+once predictions are reliable.
+"""
+
+from __future__ import annotations
+
+from collections import Counter
+from dataclasses import dataclass
+
+from src.model.state import BoardState
+from src.solver.simulate import (
+    candidate_locations,
+    simulate_tap,
+    tray_count,
+    tray_filled,
+)
+
+
+@dataclass
+class SearchResult:
+    location: str
+    expected_value: float
+    plan: list[str]  # sequence of taps (for the principal variation)
+    triplets_cleared: int
+
+
+def state_value(state: BoardState) -> float:
+    """Heuristic value of a state. Higher is better.
+
+    Components:
+    - Triplet potential: tile types with >=3 visible (bright + tray) =
+      future triplet possibilities. +5 per such tile type.
+    - Tray fullness: linear penalty growing toward 7. (full = -100,
+      6 = -20, 0 = 0)
+    - Tiles remaining: -1 per remaining tile (encourages clearing).
+    - Almost-triplet (2-in-tray): +3 per such tile type — one more tap
+      from completion.
+    - Orphan tiles (1 visible total, 0 in tray): -2 per such — these are
+      doomed unless we uncover more, drag down expected value.
+    """
+    if not state.main_board and not state.queues:
+        if tray_filled(state) == 0:
+            return 1000  # WIN
+        return 0  # All cleared but tray non-empty — abandoned
+
+    tf = tray_filled(state)
+    if tf >= 7:
+        return -1000  # LOSS
+
+    visible_count: Counter = Counter()
+    for c in state.main_board:
+        if c.tile_id:
+            visible_count[c.tile_id] += 1
+    for q in state.queues:
+        if q.tile_id:
+            visible_count[q.tile_id] += 1
+
+    tray_per_tile: Counter = Counter()
+    for t in state.tray:
+        if t.tile_id:
+            tray_per_tile[t.tile_id] += 1
+
+    score = 0.0
+
+    # Triplet potential
+    all_tiles = set(visible_count) | set(tray_per_tile)
+    for tid in all_tiles:
+        total = visible_count.get(tid, 0) + tray_per_tile.get(tid, 0)
+        if total >= 3:
+            score += 5.0  # triplet realisable
+        if tray_per_tile.get(tid, 0) == 2:
+            score += 3.0  # one more tap = clear
+        if visible_count.get(tid, 0) == 1 and tray_per_tile.get(tid, 0) == 0:
+            score -= 2.0  # orphan
+
+    # Tray penalty (quadratic — really painful as we approach 7)
+    score -= (tf / 7.0) ** 2 * 30.0
+
+    # Tile-remaining penalty — moderate encouragement to clear
+    remaining = sum(1 for c in state.main_board if c.tile_id) + \
+                sum(1 for q in state.queues if q.tile_id)
+    score -= remaining * 0.3
+
+    return score
+
+
+def search_best(
+    state: BoardState,
+    depth: int = 3,
+    occult_predictions: dict | None = None,
+    triplets_so_far: int = 0,
+    plan_so_far: list[str] | None = None,
+) -> SearchResult:
+    """Depth-limited search for the best move from this state.
+
+    Returns SearchResult with the chosen first move and its expected value.
+    """
+    if plan_so_far is None:
+        plan_so_far = []
+
+    if depth <= 0:
+        return SearchResult(
+            location=plan_so_far[0] if plan_so_far else "",
+            expected_value=state_value(state),
+            plan=plan_so_far,
+            triplets_cleared=triplets_so_far,
+        )
+
+    candidates = candidate_locations(state)
+    if not candidates:
+        return SearchResult(
+            location="", expected_value=state_value(state),
+            plan=plan_so_far, triplets_cleared=triplets_so_far,
+        )
+
+    best_value = float("-inf")
+    best_loc = candidates[0]
+    best_plan = plan_so_far + [candidates[0]]
+    best_triplets = triplets_so_far
+
+    for loc in candidates:
+        sim = simulate_tap(state, loc, occult_predictions=occult_predictions)
+        new_triplets = triplets_so_far + (1 if sim.triplet_cleared else 0)
+
+        if sim.is_terminal:
+            if sim.terminal_status == "won":
+                value = 1000.0 + new_triplets * 10  # winning is great
+            elif sim.terminal_status == "lost":
+                value = -1000.0
+            else:
+                value = state_value(sim.new_state)
+            if value > best_value:
+                best_value = value
+                best_loc = loc
+                best_plan = plan_so_far + [loc]
+                best_triplets = new_triplets
+            continue
+
+        sub = search_best(
+            sim.new_state, depth - 1, occult_predictions,
+            triplets_so_far=new_triplets,
+            plan_so_far=plan_so_far + [loc],
+        )
+        # Discount slightly per step (prefer faster solutions)
+        sub_value = sub.expected_value - 0.1
+        # Triplet clears are immediately rewarded
+        if sim.triplet_cleared:
+            sub_value += 10.0
+
+        if sub_value > best_value:
+            best_value = sub_value
+            best_loc = loc
+            best_plan = sub.plan
+            best_triplets = sub.triplets_cleared
+
+    return SearchResult(
+        location=best_loc, expected_value=best_value,
+        plan=best_plan, triplets_cleared=best_triplets,
+    )
+
+
+def lookahead_recommend(
+    state: BoardState,
+    depth: int = 3,
+    occult_predictions: dict | None = None,
+) -> dict:
+    """Top-level entry: returns a dict that mirrors the suggest_moves output
+    format but uses lookahead search instead of greedy ranking."""
+    result = search_best(state, depth=depth, occult_predictions=occult_predictions)
+    return {
+        "best_location": result.location,
+        "expected_value": result.expected_value,
+        "plan": result.plan,
+        "triplets_in_plan": result.triplets_cleared,
+        "depth": depth,
+    }

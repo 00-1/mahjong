@@ -1,0 +1,177 @@
+"""Tile economy tracker.
+
+For each tile type, tracks supply and demand:
+- visible: tiles currently selectable (bright)
+- in_tray: tiles already in the tray
+- predicted_occult: tiles we believe are at non-bright anchors via
+  occult prediction (only counted if confidence is high enough)
+- estimated_hidden: minimum count of tiles still hidden, derived from
+  the multiple-of-3 invariant
+
+For each tile T, total count must be a multiple of 3 (every triplet
+clears 3 of one type). So:
+    min_total[T] = 3 * ceil((visible + in_tray + predicted_occult) / 3)
+    estimated_hidden[T] = max(0, min_total[T] - visible - in_tray - predicted_occult)
+
+Knowing estimated_hidden lets the solver:
+- Prioritize uncovering tile types that are short of the next triplet
+- Avoid clearing visible triplets if doing so leaves us with stranded
+  tiles below
+- Pre-plan multi-step sequences
+
+Per-anchor priors (from data/levels/NN/anchor_priors.json) layer on top:
+across many runs, "anchor X has tile Y at depth-2 80% of the time"
+gives us a probability distribution for unrevealed depths.
+"""
+
+from __future__ import annotations
+
+import json
+import math
+from collections import Counter
+from dataclasses import dataclass
+from pathlib import Path
+
+from src.model.state import BoardState
+
+
+@dataclass
+class TileEconomy:
+    tile_id: str
+    visible: int
+    in_tray: int
+    predicted_occult: int
+    estimated_hidden_min: int
+    full_set_min: int  # smallest multiple of 3 >= total observable
+
+    @property
+    def observable_total(self) -> int:
+        return self.visible + self.in_tray + self.predicted_occult
+
+    def needs_more(self) -> int:
+        """How many more of this tile we need to complete a triplet
+        (assuming we already have 1 or 2)."""
+        in_play = self.visible + self.in_tray
+        if in_play == 0:
+            return 0
+        return (3 - (in_play % 3)) % 3
+
+
+def compute_economy(
+    state: BoardState,
+    occult_predictions: dict | None = None,
+    confidence_threshold: float = 0.5,
+) -> dict[str, TileEconomy]:
+    """Compute per-tile-type economy from current state + (optional) occult
+    predictions."""
+    visible: Counter = Counter()
+    for c in state.main_board:
+        if c.tile_id:
+            visible[c.tile_id] += 1
+    for q in state.queues:
+        if q.tile_id:
+            visible[q.tile_id] += 1
+
+    in_tray: Counter = Counter()
+    for t in state.tray:
+        if t.tile_id:
+            in_tray[t.tile_id] += 1
+
+    predicted_occult: Counter = Counter()
+    if occult_predictions:
+        for k, p in occult_predictions.items():
+            tid = getattr(p, "predicted_tile_id", None) if hasattr(p, "predicted_tile_id") else p.get("predicted_tile_id")
+            conf = getattr(p, "confidence", 0) if hasattr(p, "confidence") else p.get("confidence", 0)
+            if tid and conf >= confidence_threshold:
+                predicted_occult[tid] += 1
+
+    economies: dict[str, TileEconomy] = {}
+    all_tiles = set(visible) | set(in_tray) | set(predicted_occult)
+    for tid in all_tiles:
+        v = visible.get(tid, 0)
+        t = in_tray.get(tid, 0)
+        p = predicted_occult.get(tid, 0)
+        observable = v + t + p
+        full_set = 3 * math.ceil(observable / 3)
+        hidden_min = max(0, full_set - observable)
+        economies[tid] = TileEconomy(
+            tile_id=tid, visible=v, in_tray=t, predicted_occult=p,
+            estimated_hidden_min=hidden_min,
+            full_set_min=full_set,
+        )
+    return economies
+
+
+def load_anchor_priors(levels_root: Path, level: int) -> dict:
+    """Load accumulated per-anchor tile observations from past runs."""
+    p = levels_root / f"{level:02d}" / "anchor_priors.json"
+    if not p.exists():
+        return {}
+    return json.loads(p.read_text())
+
+
+def anchor_prior_distribution(
+    priors: dict,
+    row: int,
+    col: int,
+    depth: int = 1,
+) -> dict[str, float]:
+    """Given accumulated priors, return P(tile = T | anchor=(r,c), depth=d)
+    as a probability distribution over tile_ids.
+
+    Smooths with a tiny Laplace prior so rarely-seen tiles get nonzero
+    probability.
+    """
+    key = f"({row},{col})"
+    anchor_data = priors.get("anchors", {}).get(key, {})
+    depth_data = anchor_data.get(f"d{depth}", {})
+    counts = depth_data.get("tiles", {})
+    total = depth_data.get("total", 0)
+    if not counts or total == 0:
+        return {}
+
+    # Laplace smoothing with alpha=0.5 for unseen tiles
+    alpha = 0.5
+    smoothed_total = total + alpha * len(counts)
+    return {tid: (n + alpha) / smoothed_total for tid, n in counts.items()}
+
+
+def predict_anchor_from_priors(
+    levels_root: Path,
+    level: int,
+    row: int,
+    col: int,
+    depth: int = 1,
+    min_total_observations: int = 3,
+) -> tuple[str | None, float]:
+    """If we have enough prior observations, return the most-likely
+    tile_id at this anchor + its probability. Otherwise None.
+
+    min_total_observations: don't trust anchors with fewer than this many
+    runs of data (default 3 — needs at least 3 prior runs to be useful).
+    """
+    priors = load_anchor_priors(levels_root, level)
+    key = f"({row},{col})"
+    anchor_data = priors.get("anchors", {}).get(key, {})
+    depth_data = anchor_data.get(f"d{depth}", {})
+    if depth_data.get("total", 0) < min_total_observations:
+        return None, 0.0
+    dist = anchor_prior_distribution(priors, row, col, depth)
+    if not dist:
+        return None, 0.0
+    best = max(dist, key=dist.get)
+    return best, dist[best]
+
+
+def summary_string(economies: dict[str, TileEconomy], label_fn=None) -> str:
+    """Human-readable rendering for logging."""
+    if label_fn is None:
+        label_fn = lambda t: t  # noqa: E731
+    lines = []
+    for tid, e in sorted(economies.items(), key=lambda x: -x[1].observable_total):
+        lab = label_fn(tid)
+        lines.append(
+            f"  {lab:<18} v={e.visible} T={e.in_tray} ?{e.predicted_occult} "
+            f"hidden>={e.estimated_hidden_min} full_set={e.full_set_min}"
+        )
+    return "\n".join(lines)
