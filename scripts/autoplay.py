@@ -199,10 +199,28 @@ def main() -> int:
                 )
                 if not occult_for_solver:
                     occult_for_solver = None
+            state_json_path = (
+                ROOT / "data" / "extractions" / f"level_{args.level:02d}"
+                / shot_path.stem / "state.json"
+            )
+            if not state_json_path.exists():
+                # state.json missing for this shot — extract failed earlier.
+                # Re-snap so we recover instead of crashing decide_fn.
+                log.emit("recover", step=step,
+                         msg=f"state.json missing for {shot_path.stem}; re-snapping")
+                shot_path = args.shot_dir / f"autoplay_{run_id}_{step:03d}_recover.png"
+                state_dict, image_size = snap_and_extract(device_arg, shot_path, args.level)
+                if state_dict is None:
+                    final_status = "abandoned"
+                    final_reason = "snap_failed_during_recover"
+                    break
+                state_json_path = (
+                    ROOT / "data" / "extractions" / f"level_{args.level:02d}"
+                    / shot_path.stem / "state.json"
+                )
             decide_t0 = time.time()
             decision = decide_fn(
-                ROOT / "data" / "extractions" / f"level_{args.level:02d}"
-                / shot_path.stem / "state.json",
+                state_json_path,
                 image_size or (1220, 2712),
                 label_fn=label_fn,
                 use_lookahead=args.use_lookahead,
@@ -227,6 +245,8 @@ def main() -> int:
                 tap=decision.get("tap") if args.verbose else None,
                 tray=decision.get("state", {}).get("tray_filled"),
                 score=decision.get("score"),
+                lookahead_used=decision.get("lookahead_used"),
+                lookahead_value=decision.get("lookahead_expected_value"),
                 decide_ms=decide_ms,
                 num_alternatives=len(decision.get("alternatives", [])),
             )
@@ -309,9 +329,20 @@ def main() -> int:
             # Terminal states
             if decision.get("should_stop"):
                 if reason == "GAME_OVER":
-                    final_status = "lost"
-                    final_reason = "game_over"
-                    log.emit("game_over", step=step)
+                    # GAME_OVER at step 0 means we landed on a stale lose-state
+                    # screen (restart didn't reset the puzzle). Don't count it
+                    # as a played loss — return abandoned so session.py treats
+                    # it as a setup issue rather than burning a consecutive-loss.
+                    if step == 0:
+                        final_status = "abandoned"
+                        final_reason = "game_over_at_start"
+                        log.emit("game_over_at_start", step=step,
+                                 msg="screen was already game-over at run start; "
+                                     "restart probably landed on stale lose screen")
+                    else:
+                        final_status = "lost"
+                        final_reason = "game_over"
+                        log.emit("game_over", step=step)
                     break
                 if reason == "NOT_A_PUZZLE":
                     consecutive_not_a_puzzle += 1
@@ -365,20 +396,17 @@ def main() -> int:
 
                 # Wait for the auto-clear animation, then re-snap
                 before_sig = state_signature(state_dict)
-                state_dict, image_size, elapsed = adaptive_wait_for_change(
+                state_dict, image_size, elapsed, shot_path_returned = adaptive_wait_for_change(
                     device_arg, args.shot_dir, args.level, before_sig,
                     min_wait=args.min_wait + args.triplet_extra_wait,
                     max_wait=args.max_wait + args.triplet_extra_wait,
                 )
-                if state_dict is None:
+                if state_dict is None or shot_path_returned is None:
                     log.emit("error", step=step, msg="snap failed after triplet burst")
                     final_status = "abandoned"
                     final_reason = "snap_failed_post_burst"
                     break
-                # Find the freshly-saved shot path for record_step's screenshot file
-                # (the adaptive_wait helper creates timestamped files; we just track
-                # the stem of whichever it returned)
-                shot_path = _latest_shot(args.shot_dir, "autoplay_wait_")
+                shot_path = shot_path_returned
 
                 # Verify
                 v = verify_triplet_burst(
@@ -443,12 +471,12 @@ def main() -> int:
 
                 # Adaptive wait — poll until state changes or we time out
                 wait_t0 = time.time()
-                after_state, after_size, elapsed = adaptive_wait_for_change(
+                after_state, after_size, elapsed, after_shot_path = adaptive_wait_for_change(
                     device_arg, args.shot_dir, args.level, before_sig,
                     min_wait=args.min_wait, max_wait=args.max_wait,
                 )
                 wait_ms = int((time.time() - wait_t0) * 1000)
-                if after_state is None:
+                if after_state is None or after_shot_path is None:
                     log.emit("error", step=step, msg="snap failed during wait")
                     final_status = "abandoned"
                     final_reason = "snap_failed_during_wait"
@@ -470,7 +498,7 @@ def main() -> int:
                     consecutive_unchanged = 0
                     state_dict = after_state
                     image_size = after_size
-                    shot_path = _latest_shot(args.shot_dir, "autoplay_wait_")
+                    shot_path = after_shot_path
                     break
                 # Tap missed — retry with offset
                 tap_attempts += 1
@@ -487,9 +515,11 @@ def main() -> int:
                     final_status = "abandoned"
                     final_reason = "consecutive_missed_taps"
                     break
-                # Even on miss, refresh state for next iteration
-                shot_path = _latest_shot(args.shot_dir, "autoplay_wait_")
-                state_dict, _ = snap_and_extract(device_arg, shot_path, args.level)
+                # Even on miss, refresh state for next iteration. Take a
+                # fresh dedicated snap rather than reusing a wait-poll one,
+                # so state.json is guaranteed to match shot_path.stem.
+                shot_path = args.shot_dir / f"autoplay_{run_id}_{step:03d}_miss.png"
+                state_dict, image_size = snap_and_extract(device_arg, shot_path, args.level)
                 if state_dict is None:
                     final_status = "abandoned"
                     final_reason = "snap_failed_after_miss"
@@ -544,10 +574,17 @@ def main() -> int:
     return {"won": 0, "lost": 1, "abandoned": 2}.get(final_status, 2)
 
 
-def _latest_shot(shot_dir: Path, prefix: str) -> Path:
-    """Find the most recent file matching the prefix. Used to track which
-    snap file the adaptive_wait helper produced."""
+def _latest_shot(shot_dir: Path, prefix: str, level: int | None = None) -> Path:
+    """Find the most recent .png matching prefix. When level is provided,
+    skip orphan .pngs whose state.json doesn't exist (extract_board.py
+    failures left them on disk without sibling state). Falls back to the
+    raw latest .png if no good candidate is found."""
     candidates = sorted(shot_dir.glob(f"{prefix}*.png"))
+    if level is not None:
+        for p in reversed(candidates):
+            sp = ROOT / "data" / "extractions" / f"level_{level:02d}" / p.stem / "state.json"
+            if sp.exists():
+                return p
     if candidates:
         return candidates[-1]
     return shot_dir / f"{prefix}fallback.png"

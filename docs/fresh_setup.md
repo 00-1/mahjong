@@ -207,31 +207,20 @@ Concrete instance: the **Challenge Again** button on the lose screen
 read as small y≈770 (suggesting phone y≈2310), but its actual full-res
 position was y=1948 — taps at 2310 / 2340 missed entirely.
 
-## Open bug — autoplay FileNotFoundError on state.json
+## (Fixed) autoplay FileNotFoundError on state.json
 
-Reproduced multiple times this session: autoplay crashes with
-`FileNotFoundError: ... extractions/level_08/autoplay_wait_<ts>_<n>/state.json`
-mid-run, after several successful taps. Run logs:
-- `run_20260509_125837_l08` (4 steps, then exception)
-- `run_20260509_125119_l08` (11 steps, then exception)
+Earlier in this session autoplay crashed mid-run with
+`FileNotFoundError: ... extractions/level_<NN>/autoplay_wait_<ts>_<n>/state.json`
+after several successful taps. Root cause: `_latest_shot()` would
+return the newest `autoplay_wait_*.png` even if its sibling
+`state.json` didn't exist (extract failed, leaving an orphan png).
 
-Root cause (suspected): `_latest_shot()` in `scripts/autoplay.py`
-returns the latest `autoplay_wait_*.png` regardless of whether
-`extract_board.py` actually produced a `state.json` for it. If a
-poll snap inside `adaptive_wait_for_change` takes a screenshot but
-the extract fails, the .png is on disk without a sibling state.json,
-and the next loop iteration's `decide_fn(... state.json ...)` blows
-up.
-
-Fix sketch (not applied yet — paused before patching):
-- `_latest_shot` should walk candidates newest-first and skip any
-  whose corresponding `data/extractions/level_<NN>/<stem>/state.json`
-  doesn't exist.
-- OR: gate the next-iteration `decide_fn` on the state.json existing,
-  and if not, do an extra `snap_and_extract` first.
-
-Until fixed, runs that should produce 20+ steps die at 4-11 steps
-with `status=abandoned, reason=exception:FileNotFoundError`.
+Fix applied:
+- `adaptive_wait_for_change` now returns the `shot_path` of the
+  successful extract directly, so the caller never has to glob disk.
+- `_latest_shot` is level-aware and skips orphan pngs as backup.
+- The main loop also gates `decide_fn` on state.json existing and
+  re-snaps if missing.
 
 ## Session.py needed extra plumbing for kickoff workflow
 
@@ -246,18 +235,13 @@ drive Discard → Challenge Again between losses. KICKOFF.md frames
 that as the agent's responsibility, but it's a tight, scripted path
 worth automating.
 
-## navigate.py calibrated_resolution gotcha
+## (Fixed) navigate.py calibrated_resolution flag
 
-`scripts/navigate.py calibrate` records the *current* device
-resolution as `calibrated_resolution`, so when you pass it
-F6-calibrated coords (1220×2712) on a different device, future scaling
-is wrong. Workaround: after running calibrate, hand-edit
-`data/navigation_config.json` to set
-`"calibrated_resolution": [1220, 2712]` so the F6 coords scale
-correctly to wherever you run.
-
-(A proper fix would be a `--calibrated-resolution W H` flag on
-`navigate.py calibrate` so the source resolution is explicit.)
+`scripts/navigate.py calibrate` now accepts `--calibrated-resolution
+WxH` so coords from a different device (e.g. Poco F6 1220x2712) are
+recorded with the right source resolution and scale correctly when
+run elsewhere. KICKOFF.md is updated to use this. The earlier
+hand-edit workaround is no longer needed.
 
 ## restart.py calibration values that worked here (1080×2400)
 

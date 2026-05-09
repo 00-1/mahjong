@@ -87,9 +87,12 @@ def main() -> int:
     p.add_argument("--inter-attempt-pause", type=float, default=8.0,
                    help="Seconds to wait between attempts (for navigation back)")
     p.add_argument("--max-consecutive-losses", type=int, default=4,
-                   help="Halt after N consecutive losses on the SAME level. "
+                   help="Halt after N consecutive *played* losses on the SAME level. "
                         "Strategy probably broken; don't burn all 10 challenge "
                         "tickets. Default 4.")
+    p.add_argument("--max-consecutive-abandoned", type=int, default=3,
+                   help="Halt after N consecutive abandoned attempts (setup issues, "
+                        "snap failures, stale screens — NOT played losses). Default 3.")
     p.add_argument("--use-lookahead", action="store_true",
                    help="Forwarded to autoplay.")
     p.add_argument("--lookahead-depth", type=int, default=None,
@@ -113,6 +116,7 @@ def main() -> int:
     for level in args.level:
         won_this_level = False
         consecutive_losses = 0
+        consecutive_abandoned = 0
         for attempt in range(1, args.max_attempts + 1):
             result = run_autoplay(level, args, attempt=attempt)
             print(json.dumps({"event": "attempt_end", **result,
@@ -125,18 +129,31 @@ def main() -> int:
                 print(json.dumps({"event": "session_abort", "reason": "setup_error",
                                   "level": level, "attempt": attempt}))
                 return 1
-            if result["status"] in ("lost", "abandoned"):
+            if result["status"] == "lost":
                 consecutive_losses += 1
+                consecutive_abandoned = 0
                 if consecutive_losses >= args.max_consecutive_losses:
                     print(json.dumps({"event": "halt_on_consecutive_losses",
                                       "level": level, "consecutive_losses": consecutive_losses,
                                       "msg": "strategy probably broken; halting before burning more tickets"}))
                     return 1
+            elif result["status"] == "abandoned":
+                consecutive_abandoned += 1
+                if consecutive_abandoned >= args.max_consecutive_abandoned:
+                    print(json.dumps({"event": "halt_on_consecutive_abandoned",
+                                      "level": level, "consecutive_abandoned": consecutive_abandoned,
+                                      "msg": "repeated setup issues — probable stale screen or "
+                                             "broken extract; halting for LLM inspection"}))
+                    return 1
             if attempt < args.max_attempts:
-                if (ROOT / "data" / "restart_config.json").exists():
+                # Only invoke restart.py after an actual loss — abandoned
+                # attempts may have left the screen mid-game (no modal to
+                # dismiss), so restart taps would land on random tiles.
+                if result["status"] == "lost" and (ROOT / "data" / "restart_config.json").exists():
                     print(json.dumps({"event": "restart_run", "between_attempts": True}))
                     rc = subprocess.run([
                         sys.executable, str(ROOT / "scripts" / "restart.py"),
+                        "--level", str(level),
                         *(["--shot-dir", args.shot_dir] if args.shot_dir else []),
                     ]).returncode
                     if rc != 0:
@@ -144,9 +161,13 @@ def main() -> int:
                                           "msg": "falling back to fixed sleep"}))
                         time.sleep(args.inter_attempt_pause)
                 else:
+                    why = ("post-loss restart not configured" if result["status"] == "lost"
+                           else "prior attempt abandoned — no modal to dismiss; "
+                                "agent should inspect screen before next attempt")
                     print(json.dumps({"event": "pause_between_attempts",
                                       "seconds": args.inter_attempt_pause,
-                                      "msg": "navigate back to gameplay screen now"}))
+                                      "prior_status": result["status"],
+                                      "msg": why}))
                     time.sleep(args.inter_attempt_pause)
         if won_this_level:
             levels_won += 1

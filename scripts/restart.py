@@ -42,7 +42,6 @@ sys.path.insert(0, str(ROOT))
 
 from src.agent.autoplay_lib import adb_check_device, adb_screencap, adb_tap
 from src.agent.path_log import log_path_failure
-from src.vision.detect import DetectConfig, detect_tile_faces
 
 import cv2
 
@@ -61,15 +60,23 @@ def save_config(cfg: dict) -> None:
     CONFIG_PATH.write_text(json.dumps(cfg, indent=2))
 
 
-def looks_like_puzzle(device_arg: list[str], tmp_path: Path) -> bool:
-    """Use the same heuristic as agent.py check: >= 6 tile faces detected
-    means we're on a puzzle gameplay screen."""
-    if not adb_screencap(device_arg, tmp_path):
+def looks_like_fresh_puzzle(device_arg: list[str], tmp_path: Path,
+                            level: int) -> bool:
+    """We want to confirm we're on a fresh puzzle gameplay screen — NOT
+    the lose screen (which still shows the board behind a modal and so
+    passes a naive tile-face count check).
+
+    Strategy: snap, extract, require both:
+      - >= 6 tile faces detected on main_board (puzzle is loaded)
+      - tray is empty (a real fresh game has tray_filled == 0)
+    """
+    from src.agent.autoplay_lib import snap_and_extract
+    state, _ = snap_and_extract(device_arg, tmp_path, level)
+    if state is None:
         return False
-    bgr = cv2.imread(str(tmp_path))
-    if bgr is None:
-        return False
-    return len(detect_tile_faces(bgr, DetectConfig())) >= 6
+    main_count = sum(1 for c in state.get("main_board", []) if c.get("tile_id"))
+    tray_filled = sum(1 for t in state.get("tray", []) if t.get("tile_id"))
+    return main_count >= 6 and tray_filled == 0
 
 
 def detect_resolution(device_arg: list[str], tmp_path: Path) -> tuple[int, int] | None:
@@ -113,6 +120,9 @@ def main() -> int:
                    help="Seconds to wait for fresh puzzle to load after Challenge Again")
     p.add_argument("--max-puzzle-poll", type=int, default=10,
                    help="Number of times to retry checking for puzzle after load")
+    p.add_argument("--level", type=int, default=8,
+                   help="Level number — used to extract state for the "
+                        "fresh-puzzle confirmation check (tray empty + board full)")
     p.add_argument("--verbose", action="store_true")
     args = p.parse_args()
 
@@ -185,11 +195,14 @@ def main() -> int:
         print(json.dumps({"event": "error", "msg": "challenge_again tap failed"}))
         return 1
 
-    # Step 3: poll until fresh puzzle is loaded
+    # Step 3: poll until fresh puzzle is loaded. We require BOTH a populated
+    # main board AND an empty tray — the lose screen still shows the board
+    # behind the modal but with the tray frozen at 7, which would otherwise
+    # be misread as "puzzle visible" by a naive tile-face count.
     time.sleep(args.puzzle_load_wait)
-    tmp = args.shot_dir / "restart_check.png"
     for attempt in range(1, args.max_puzzle_poll + 1):
-        if looks_like_puzzle(device_arg, tmp):
+        tmp = args.shot_dir / f"restart_check_{attempt}.png"
+        if looks_like_fresh_puzzle(device_arg, tmp, args.level):
             print(json.dumps({"event": "restart_ok", "attempt": attempt}))
             return 0
         if args.verbose:

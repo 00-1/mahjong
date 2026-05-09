@@ -106,12 +106,16 @@ def decide(
         except Exception:
             lookahead_recommendation = None
 
+    lookahead_used = False
+    lookahead_expected_value = None
     if lookahead_recommendation is not None and lookahead_recommendation["best_location"]:
         # Find the matching move in the existing list (for tap coords)
         target_loc = lookahead_recommendation["best_location"]
         matching = [m for m in moves if m.location == target_loc]
         if matching:
             best = matching[0]
+            lookahead_used = True
+            lookahead_expected_value = lookahead_recommendation.get("expected_value")
         else:
             best = moves[0]
     else:
@@ -181,6 +185,10 @@ def decide(
         "label": label_fn(best.tile_id),
         "confidence": round(confidence, 3),
         "score": round(best.score, 3),
+        "lookahead_used": lookahead_used,
+        "lookahead_expected_value": (
+            round(lookahead_expected_value, 3) if lookahead_expected_value is not None else None
+        ),
         "reason": best.reason,
         "alternatives": alternatives,
         "triplet_sequence": triplet_sequence,

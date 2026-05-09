@@ -108,10 +108,16 @@ def adaptive_wait_for_change(
     min_wait: float = 0.3,
     max_wait: float = 3.0,
     poll_interval: float = 0.25,
-) -> tuple[dict | None, tuple[int, int] | None, float]:
+) -> tuple[dict | None, tuple[int, int] | None, float, Path | None]:
     """Poll for state change after a tap. Returns (after_state, image_size,
-    elapsed_sec). If no change after max_wait, returns the final state anyway
-    (caller decides whether to call it a miss).
+    elapsed_sec, shot_path). shot_path is the file whose state was returned
+    (state.json is guaranteed to exist for it). If no change after max_wait,
+    returns the most recent successful extract — or (None, None, elapsed, None)
+    if every extract failed.
+
+    Returning shot_path explicitly avoids a race where the caller would glob
+    the shot_dir for the latest .png and pick up an orphan whose extract
+    failed, causing a downstream FileNotFoundError on state.json.
 
     Saves intermediate snap PNGs as autoplay_wait_*.png — they're temporary
     debugging aids; pruned after run end if you want.
@@ -119,18 +125,20 @@ def adaptive_wait_for_change(
     time.sleep(min_wait)
     elapsed = min_wait
     snap_idx = 0
-    last_state = None
-    last_size = None
+    last_state: dict | None = None
+    last_size: tuple[int, int] | None = None
+    last_good_shot: Path | None = None
     while elapsed <= max_wait:
         snap_idx += 1
         shot_path = shot_dir / f"autoplay_wait_{int(time.time()*1000)}_{snap_idx}.png"
         state, size = snap_and_extract(device_arg, shot_path, level)
-        last_state, last_size = state, size
-        if state is not None and state_signature(state) != before_sig:
-            return state, size, elapsed
+        if state is not None:
+            last_state, last_size, last_good_shot = state, size, shot_path
+            if state_signature(state) != before_sig:
+                return state, size, elapsed, shot_path
         time.sleep(poll_interval)
         elapsed += poll_interval
-    return last_state, last_size, elapsed
+    return last_state, last_size, elapsed, last_good_shot
 
 
 def heuristic_outcome(last_state: dict | None,

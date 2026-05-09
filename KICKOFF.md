@@ -26,10 +26,13 @@ python scripts/navigate.py calibrate \
     --scroll-from-x 600 --scroll-from-y 2200 \
     --scroll-to-x 600 --scroll-to-y 1700 \
     --continue-y-hint 1981 \
-    --num-scrolls 1
+    --num-scrolls 1 \
+    --calibrated-resolution 1220x2712
 ```
 
-Saves to `data/navigation_config.json`.
+Saves to `data/navigation_config.json`. `--calibrated-resolution 1220x2712`
+tells the script the coords above are F6 resolution; when run on a
+different-size phone, coords auto-scale.
 
 ## 2. Calibrate restart (once per device)
 

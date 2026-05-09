@@ -98,15 +98,27 @@ def scale_xy(xy: tuple[int, int], cal_res: tuple[int, int],
 
 
 def calibrate(args) -> int:
-    """Save calibration coords + record current device resolution."""
+    """Save calibration coords + record the source resolution the coords
+    refer to. By default we use the current device's resolution, but
+    --calibrated-resolution lets you pass coords from a *different* device
+    (e.g. Poco F6 1220x2712) and have them scale correctly when run here."""
     device_arg = ["-s", args.device] if args.device else []
     if adb_check_device(device_arg) != "device":
         print(json.dumps({"event": "error", "msg": "adb not connected"}))
         return 3
-    res = detect_resolution(device_arg, args.shot_dir / "calibrate.png")
-    if res is None:
-        print(json.dumps({"event": "error", "msg": "couldn't detect resolution"}))
-        return 3
+    if args.calibrated_resolution:
+        try:
+            cw, ch = args.calibrated_resolution.lower().split("x")
+            res = (int(cw), int(ch))
+        except (ValueError, AttributeError):
+            print(json.dumps({"event": "error",
+                              "msg": "--calibrated-resolution must be WxH (e.g. 1220x2712)"}))
+            return 3
+    else:
+        res = detect_resolution(device_arg, args.shot_dir / "calibrate.png")
+        if res is None:
+            print(json.dumps({"event": "error", "msg": "couldn't detect resolution"}))
+            return 3
     cfg = {
         "calibrated_resolution": list(res),
         "event_banner": {"x": args.event_banner_x, "y": args.event_banner_y},
@@ -265,6 +277,10 @@ def main():
     cal.add_argument("--scroll-duration-ms", type=int, default=800)
     cal.add_argument("--continue-y-hint", type=int, default=None)
     cal.add_argument("--num-scrolls", type=int, default=1)
+    cal.add_argument("--calibrated-resolution", default=None,
+                     help="Source resolution for the coords as WxH (e.g. 1220x2712). "
+                          "Default: current device's resolution. Pass this when the coords "
+                          "above were calibrated on a different device.")
 
     go = sub.add_parser("go")
     go.add_argument("--device", default=None)
