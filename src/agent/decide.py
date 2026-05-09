@@ -36,6 +36,9 @@ def decide(
     use_lookahead: bool = False,
     lookahead_depth: int = 3,
     occult_predictions: dict | None = None,
+    inventory: dict | None = None,
+    cleared_history: dict | None = None,
+    surrender_threshold: float = -500.0,
 ) -> dict:
     if label_fn is None:
         label_fn = lambda t: t  # noqa: E731
@@ -98,10 +101,14 @@ def decide(
     lookahead_recommendation = None
     if use_lookahead and not has_immediate_triplet:
         try:
+            from collections import Counter as _Counter
+            ch = _Counter(cleared_history) if cleared_history else None
             lookahead_recommendation = lookahead_recommend(
                 state,
                 depth=lookahead_depth,
                 occult_predictions=occult_predictions,
+                inventory=inventory,
+                cleared_history=ch,
             )
         except Exception:
             lookahead_recommendation = None
@@ -120,6 +127,28 @@ def decide(
             best = moves[0]
     else:
         best = moves[0]
+
+    # Surrender guard: if lookahead unambiguously says we're losing within
+    # depth (every candidate's best continuation is below surrender_threshold),
+    # stop tapping. Continuing would just burn tray slots and drag the run
+    # to the inevitable game-over modal. session.py treats abandoned similarly
+    # to lost for restart purposes, so we lose no recovery opportunity.
+    if (lookahead_used and lookahead_expected_value is not None
+            and lookahead_expected_value <= surrender_threshold):
+        return {
+            "should_stop": True,
+            "reason_code": "UNRECOVERABLE",
+            "reason": (
+                f"lookahead expected_value={lookahead_expected_value:.1f} "
+                f"<= surrender_threshold={surrender_threshold}; "
+                f"every continuation within depth-{lookahead_depth} ends in loss"
+            ),
+            "lookahead_used": True,
+            "lookahead_expected_value": round(lookahead_expected_value, 3),
+            "score": round(best.score, 3),
+            "state": _state_summary(state, label_fn),
+        }
+
     bbox = _location_to_bbox(state, best.location)
 
     # If the top move is part of a triplet that's fully tappable now (all

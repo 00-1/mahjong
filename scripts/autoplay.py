@@ -127,6 +127,11 @@ def main() -> int:
                         "anchor priors. Lower this once the live predictor "
                         "accuracy (data/levels/<NN>/occult_accuracy.json) "
                         "beats the anchor-prior baseline.")
+    p.add_argument("--surrender-threshold", type=float, default=-500.0,
+                   help="If lookahead's expected_value falls below this, "
+                        "decide() returns UNRECOVERABLE and the run ends "
+                        "as 'lost' — saves continuing to tap into the "
+                        "inevitable game-over. Default -500.")
     args = p.parse_args()
 
     device_arg = ["-s", args.device] if args.device else []
@@ -159,6 +164,26 @@ def main() -> int:
     run_started = time.time()
     levels_root = ROOT / "data" / "levels"
     run_root = runs_dir / run_id
+
+    # Per-run cleared-history: cumulative count of each tile_id removed
+    # via triplet auto-clear. Fed into state_value's dead-tile detection
+    # so the planner knows when a tile_id is exhausted from the level.
+    from collections import Counter as _Counter
+    cleared_history: _Counter = _Counter()
+
+    # Per-level tile inventory (counts per tile_id, multiples of 3). Built
+    # by scripts/build_inventory.py from accumulated runs. Optional —
+    # state_value falls back to "visible+tray < 3 = dead" if absent.
+    inventory: dict | None = None
+    inventory_path = levels_root / f"{args.level:02d}" / "inventory.json"
+    if inventory_path.exists():
+        try:
+            inventory = json.loads(inventory_path.read_text())
+            log.emit("inventory_loaded",
+                     n_tiles=len(inventory.get("tiles", {})),
+                     estimated_total=inventory.get("estimated_total_tiles"))
+        except Exception as exc:
+            log.emit("inventory_load_failed", err=str(exc))
 
     # Lazy-loaded — only when --learn-occult requested
     _template_for_occult = None
@@ -240,6 +265,9 @@ def main() -> int:
                 use_lookahead=args.use_lookahead,
                 lookahead_depth=args.lookahead_depth,
                 occult_predictions=occult_for_solver,
+                inventory=inventory,
+                cleared_history=dict(cleared_history),
+                surrender_threshold=args.surrender_threshold,
             )
             decide_ms = int((time.time() - decide_t0) * 1000)
             record_step(
@@ -342,6 +370,16 @@ def main() -> int:
 
             # Terminal states
             if decision.get("should_stop"):
+                if reason == "UNRECOVERABLE":
+                    # Lookahead says every continuation within depth ends
+                    # in loss. Don't keep tapping into game-over; let
+                    # session.py invoke restart sooner.
+                    final_status = "lost"
+                    final_reason = "unrecoverable"
+                    log.emit("unrecoverable", step=step,
+                             lookahead_value=decision.get("lookahead_expected_value"),
+                             reason=decision.get("reason", ""))
+                    break
                 if reason == "GAME_OVER":
                     # GAME_OVER at step 0 means we landed on a stale lose-state
                     # screen (restart didn't reset the puzzle). Don't count it
@@ -444,6 +482,14 @@ def main() -> int:
                 if v.success:
                     consecutive_missed_taps = 0
                     consecutive_unchanged = 0
+                    # Successful triplet burst: 3 instances of decision["tile_id"]
+                    # cleared. Track for state_value's dead-tile detection.
+                    cleared_tid = decision.get("tile_id")
+                    if cleared_tid:
+                        cleared_history[cleared_tid] += 3
+                        log.emit("triplet_cleared", step=step,
+                                 tile_id=cleared_tid,
+                                 cumulative=cleared_history[cleared_tid])
                 else:
                     consecutive_missed_taps += 1
                 step += 1
