@@ -35,6 +35,11 @@ from src.agent.autoplay_lib import (
     state_signature,
 )
 from src.agent.decide import decide as decide_fn
+from src.agent.dim_learn import (
+    aggregate_dim_accuracy,
+    predict_dim,
+    verify_predictions_vs_state,
+)
 from src.agent.run import end_run, record_step, save_meta, start_run
 from src.agent.stats import integrate_run
 from src.agent.verify import verify_tap, verify_triplet_burst
@@ -95,6 +100,9 @@ def main() -> int:
     p.add_argument("--max-tap-retries", type=int, default=2)
     p.add_argument("--health-check-interval", type=int, default=20,
                    help="Verify ADB device is reachable every N steps")
+    p.add_argument("--learn-dim", action="store_true",
+                   help="Predict dim tiles each step + verify against next state's bright tiles. "
+                        "Adds ~0.5-1s per step but builds dim-ID accuracy training data.")
     args = p.parse_args()
 
     device_arg = ["-s", args.device] if args.device else []
@@ -121,7 +129,10 @@ def main() -> int:
     consecutive_missed_taps = 0
     consecutive_unchanged = 0  # state didn't change after tap (potentially-stuck)
     last_state = None
+    last_dim_predictions: list = []  # for verifying against next bright state
     run_started = time.time()
+    levels_root = ROOT / "data" / "levels"
+    run_root = runs_dir / run_id
 
     # Initial snapshot
     shot_path = args.shot_dir / f"autoplay_{run_id}_init.png"
@@ -168,6 +179,33 @@ def main() -> int:
                 decide_ms=decide_ms,
                 num_alternatives=len(decision.get("alternatives", [])),
             )
+
+            # Verify last step's dim predictions against this step's bright state
+            if args.learn_dim and last_dim_predictions:
+                comparisons = verify_predictions_vs_state(last_dim_predictions, state_dict)
+                if comparisons:
+                    correct = sum(1 for c in comparisons if c["correct"])
+                    log.emit("dim_verify", step=step,
+                             total=len(comparisons), correct=correct,
+                             comparisons=comparisons)
+                    if not args.no_stats:
+                        aggregate_dim_accuracy(levels_root, args.level, comparisons)
+
+            # Predict dim tiles in this step's state for verification next step
+            if args.learn_dim:
+                dim_t0 = time.time()
+                preds = predict_dim(shot_path, args.level, args.tiles_dir)
+                dim_ms = int((time.time() - dim_t0) * 1000)
+                # Save predictions per step for offline analysis
+                pred_path = run_root / f"t{step:03d}.dim_predictions.json"
+                pred_path.write_text(json.dumps([
+                    {**vars(p), "bbox": list(p.bbox)} for p in preds
+                ], indent=2))
+                log.emit("dim_predict", step=step,
+                         predictions_count=len(preds),
+                         dim_ms=dim_ms,
+                         confident=sum(1 for p in preds if p.confidence_score < 0.5))
+                last_dim_predictions = preds
 
             # Terminal states
             if decision.get("should_stop"):

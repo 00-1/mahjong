@@ -106,6 +106,23 @@ Every `--health-check-interval` steps (default 20), autoplay verifies
 the ADB device is still reachable. If not, abandons cleanly with
 status=abandoned, reason=adb_disconnected.
 
+### Dim-tile learning loop (optional, `--learn-dim`)
+
+Adds ~0.5-1s per step but builds training data for the partial-occlusion
+identifier:
+
+1. Each step, predict dim tiles in the current screenshot via intra-
+   screenshot reference matching. Save to `tNNN.dim_predictions.json`.
+2. On the NEXT step, when a previously-dim anchor now has a bright tile,
+   compare the prediction to the actual reveal.
+3. Aggregate per-level: `data/levels/NN/dim_accuracy.json` tracks
+   `total / correct`, `by_predicted` and `by_actual` tile breakdowns,
+   confusion matrix (`predicted->actual`), and accuracy bucketed by
+   confidence score (`high`: <0.3, `med`: 0.3-0.6, `low`: >=0.6).
+
+Use this when running for the express purpose of improving the dim
+identifier. Skip for time-pressured win-the-level runs.
+
 ### Loop detection
 
 If the visible state hasn't changed for 5 consecutive steps (despite
