@@ -1,12 +1,12 @@
 {
   "level": 8,
-  "runs_total": 33,
+  "runs_total": 34,
   "runs_won": 2,
-  "runs_lost": 12,
+  "runs_lost": 13,
   "runs_abandoned": 19,
-  "total_taps": 187,
+  "total_taps": 194,
   "total_taps_won": 35,
-  "total_taps_lost": 87,
+  "total_taps_lost": 94,
   "common_loss_tray_tiles": {
     "tile_010": 13,
     "tile_011": 10,
@@ -29,7 +29,7 @@
     },
     "(0,1)": {
       "tile_010": 23,
-      "tile_008": 17,
+      "tile_008": 18,
       "tile_006": 1,
       "tile_002": 4,
       "tile_001": 16,
@@ -38,7 +38,7 @@
       "tile_011": 12,
       "tile_007": 9,
       "tile_013": 2,
-      "tile_004": 7,
+      "tile_004": 8,
       "tile_003": 19,
       "tile_014": 1,
       "tile_015": 1
@@ -67,7 +67,7 @@
       "tile_005": 1,
       "tile_011": 2,
       "tile_013": 3,
-      "tile_014": 5
+      "tile_014": 8
     },
     "(1,2)": {
       "tile_001": 9,
@@ -101,7 +101,7 @@
       "tile_013": 14,
       "tile_004": 6,
       "tile_011": 4,
-      "tile_006": 12,
+      "tile_006": 15,
       "tile_003": 11,
       "tile_008": 2,
       "tile_009": 1,
@@ -130,11 +130,11 @@
       "tile_010": 1,
       "tile_009": 6,
       "tile_006": 1,
-      "tile_002": 18
+      "tile_002": 21
     },
     "(4,1)": {
       "tile_003": 9,
-      "tile_011": 26,
+      "tile_011": 29,
       "tile_005": 5,
       "tile_008": 17,
       "tile_013": 37,
@@ -207,7 +207,7 @@
       "tile_005": 2,
       "tile_013": 10,
       "tile_009": 2,
-      "tile_015": 10
+      "tile_015": 13
     },
     "(4,0)": {
       "tile_005": 10,
@@ -232,6 +232,6 @@
       "tile_013": 7
     }
   },
-  "win_rate": 0.06060606060606061,
-  "avg_taps_per_run": 5.666666666666667
+  "win_rate": 0.058823529411764705,
+  "avg_taps_per_run": 5.705882352941177
 }

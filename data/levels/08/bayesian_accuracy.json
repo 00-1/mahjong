@@ -1,6 +1,6 @@
 {
   "level": 8,
-  "total": 183,
+  "total": 189,
   "correct": 40,
   "by_predicted": {
     "tile_004": {
@@ -16,11 +16,11 @@
       "correct": 6
     },
     "tile_007": {
-      "total": 20,
+      "total": 22,
       "correct": 14
     },
     "tile_005": {
-      "total": 10,
+      "total": 12,
       "correct": 0
     },
     "tile_001": {
@@ -40,13 +40,13 @@
       "correct": 0
     },
     "tile_010": {
-      "total": 7,
+      "total": 9,
       "correct": 3
     }
   },
   "by_actual": {
     "tile_006": {
-      "total": 16,
+      "total": 18,
       "correct": 0
     },
     "tile_010": {
@@ -98,7 +98,11 @@
       "correct": 0
     },
     "tile_014": {
-      "total": 3,
+      "total": 5,
+      "correct": 0
+    },
+    "tile_015": {
+      "total": 2,
       "correct": 0
     }
   },
@@ -133,8 +137,10 @@
     "tile_010->tile_005": 1,
     "tile_009->tile_011": 7,
     "tile_012->tile_001": 2,
-    "tile_010->tile_014": 3,
-    "tile_002->tile_001": 1
+    "tile_010->tile_014": 5,
+    "tile_002->tile_001": 1,
+    "tile_007->tile_006": 2,
+    "tile_005->tile_015": 2
   },
-  "accuracy": 0.2185792349726776
+  "accuracy": 0.21164021164021163
 }
