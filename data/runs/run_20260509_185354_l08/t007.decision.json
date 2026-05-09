@@ -1,0 +1,38 @@
+{
+  "should_stop": true,
+  "reason_code": "UNRECOVERABLE",
+  "reason": "lookahead expected_value=-1000.0 <= surrender_threshold=-500.0; every continuation within depth-3 ends in loss",
+  "lookahead_used": true,
+  "lookahead_expected_value": -1000.0,
+  "score": -1.5,
+  "tap": {
+    "x": 540,
+    "y": 1261,
+    "location": "queue:right_upper"
+  },
+  "tile_id": "tile_002",
+  "label": "butterfly_orb",
+  "state": {
+    "level": 8,
+    "image_size": [
+      1080,
+      2400
+    ],
+    "tray_filled": 0,
+    "tray": [],
+    "main_board_count": 9,
+    "queue_count": 3,
+    "tile_counts": {
+      "lantern": 2,
+      "bee": 1,
+      "pinwheel": 1,
+      "paper_crane": 1,
+      "plumeria": 1,
+      "sunflower": 2,
+      "butterfly_orb": 2,
+      "blue_butterfly": 1,
+      "dandelion": 1
+    },
+    "looks_like_puzzle": true
+  }
+}

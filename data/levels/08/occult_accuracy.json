@@ -1,7 +1,7 @@
 {
   "level": 8,
-  "total": 67,
-  "correct": 3,
+  "total": 74,
+  "correct": 4,
   "by_predicted": {
     "tile_005": {
       "total": 12,
@@ -12,7 +12,7 @@
       "correct": 0
     },
     "tile_002": {
-      "total": 5,
+      "total": 6,
       "correct": 0
     },
     "tile_009": {
@@ -20,8 +20,8 @@
       "correct": 1
     },
     "tile_007": {
-      "total": 4,
-      "correct": 0
+      "total": 6,
+      "correct": 1
     },
     "tile_004": {
       "total": 1,
@@ -32,11 +32,11 @@
       "correct": 0
     },
     "tile_008": {
-      "total": 1,
+      "total": 2,
       "correct": 0
     },
     "tile_003": {
-      "total": 5,
+      "total": 6,
       "correct": 0
     },
     "tile_001": {
@@ -48,13 +48,13 @@
       "correct": 0
     },
     "tile_018": {
-      "total": 15,
+      "total": 17,
       "correct": 0
     }
   },
   "by_actual": {
     "tile_011": {
-      "total": 3,
+      "total": 4,
       "correct": 0
     },
     "tile_012": {
@@ -66,7 +66,7 @@
       "correct": 0
     },
     "tile_013": {
-      "total": 10,
+      "total": 12,
       "correct": 0
     },
     "tile_006": {
@@ -82,11 +82,11 @@
       "correct": 0
     },
     "tile_007": {
-      "total": 6,
-      "correct": 0
+      "total": 7,
+      "correct": 1
     },
     "tile_004": {
-      "total": 6,
+      "total": 7,
       "correct": 0
     },
     "tile_005": {
@@ -98,11 +98,11 @@
       "correct": 0
     },
     "tile_002": {
-      "total": 2,
+      "total": 3,
       "correct": 0
     },
     "tile_009": {
-      "total": 3,
+      "total": 4,
       "correct": 1
     }
   },
@@ -123,7 +123,7 @@
     "tile_008->tile_003": 1,
     "tile_006->tile_010": 2,
     "tile_003->tile_010": 1,
-    "tile_003->tile_013": 1,
+    "tile_003->tile_013": 2,
     "tile_003->tile_008": 1,
     "tile_005->tile_002": 1,
     "tile_011->tile_002": 1,
@@ -140,8 +140,8 @@
     "tile_003->tile_004": 1,
     "tile_005->tile_008": 1,
     "tile_018->tile_003": 1,
-    "tile_018->tile_013": 2,
-    "tile_018->tile_004": 2,
+    "tile_018->tile_013": 3,
+    "tile_018->tile_004": 3,
     "tile_002->tile_007": 1,
     "tile_011->tile_004": 1,
     "tile_001->tile_005": 1,
@@ -154,18 +154,21 @@
     "tile_005->tile_007": 1,
     "tile_011->tile_003": 1,
     "tile_007->tile_001": 1,
-    "tile_018->tile_010": 1
+    "tile_018->tile_010": 1,
+    "tile_002->tile_011": 1,
+    "tile_008->tile_009": 1,
+    "tile_007->tile_002": 1
   },
   "by_confidence_bucket": {
     "med": {
-      "total": 27,
+      "total": 29,
       "correct": 0,
       "accuracy": 0.0
     },
     "low": {
-      "total": 38,
-      "correct": 3,
-      "accuracy": 0.07894736842105263
+      "total": 43,
+      "correct": 4,
+      "accuracy": 0.09302325581395349
     },
     "high": {
       "total": 2,
@@ -175,5 +178,5 @@
   },
   "method_top_agrees_when_correct": 1,
   "method_top_agrees_when_wrong": 3,
-  "accuracy": 0.04477611940298507
+  "accuracy": 0.05405405405405406
 }

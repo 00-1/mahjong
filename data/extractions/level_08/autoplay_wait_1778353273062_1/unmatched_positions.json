@@ -1,0 +1,29 @@
+{
+  "image": "/data/data/com.termux/files/home/snaps/autoplay/autoplay_wait_1778353273062_1.png",
+  "image_size": [
+    1080,
+    2400
+  ],
+  "template_native": [
+    1220,
+    2712
+  ],
+  "unmatched": [
+    {
+      "cx": 541,
+      "cy": 299,
+      "native_cx": 611,
+      "native_cy": 337,
+      "w": 84,
+      "h": 81
+    },
+    {
+      "cx": 896,
+      "cy": 300,
+      "native_cx": 1012,
+      "native_cy": 338,
+      "w": 76,
+      "h": 89
+    }
+  ]
+}
