@@ -13,8 +13,9 @@ misfires. Lock this in as the standard.
 | Search magnifier | (115, 1950) | Bottom-left, world-map only |
 | Furnace tab (after horiz-swipe) | (900, 1845) | Tap centre of icon, not the label below it. Sometimes a second tap is needed if the first hits the label |
 | Tab-row scroll | swipe `1000 1850 → 100 1850, 500ms` | Reveals Quarry/Furnace from default Monster |
-| Lv-slider thumb (drag) | from `(1000, 1985)` to `(550, 1985)`, 1500ms | Drops from Lv7 (default) to ~Lv4. Slow drag is critical — short drags don't register |
-| Lv-slider plus button | (1015, 1970) | Nudge up by 1 (e.g. Lv4 → Lv5) |
+| Lv-slider minus button | (70, 1980) | Drops by 1 per tap. *This is the reliable control.* Earlier guesses of (45/55/60, 1985/2000) miss the button entirely |
+| Lv-slider plus button | (1015, 1980) | Nudge up by 1 (e.g. Lv4 → Lv5) |
+| Lv-slider thumb (drag) | from `(905, 1985)` to `~(550, 1985)`, 1500ms+ | *Unreliable.* Sometimes registers (drops to Lv4), often does nothing. Use the minus button instead and only fall back to drag if minus also misbehaves |
 | SEARCH button | (540, 2280) | Bottom of search panel. Re-tap to cycle to next nearest mine |
 | Gather marker | (520, 650) | Small troop figure above the "Gather" text. Camera auto-centres after SEARCH |
 | Bottom Select All / Depart | (540, 2295) | The big yellow CTA at the very bottom of the Depart dialog. Same coords for both — "Select All" becomes "Depart" after troops fill |
@@ -23,10 +24,59 @@ misfires. Lock this in as the standard.
 | Mythic Hero promo close (X) | (1005, 390) | Top-right of the popup card after a connection-restore |
 | Connection-failed CONFIRM | (540, 1440) | Reconnect dialog after PNC loses network |
 
-The slider quirk is worth re-reading: a short drag from the thumb does
-nothing, only a 1500-ms drag spanning ≥30% of the track moves the
-value. After landing roughly, nudge with the + button at (1015, 1970)
-— each tap = +1 level.
+**Slider control (revised after 2026-05-11 session):** prefer the
+minus button at **(70, 1980)** and the plus button at **(1015, 1980)**.
+Each tap moves the slider by exactly 1 level. To go Lv7 (default) →
+Lv5: minus minus. Or to fix a stuck-at-Lv6 state: minus minus → plus.
+
+The drag-thumb path used to work in the prior session but was flaky
+this run — multiple long drags at 1500ms and 2500ms both no-op'd
+when the slider was at Lv6. Reach for the buttons first.
+
+## DO NOT tap (540, 2280) when no search panel is up
+
+The SEARCH-button coord lies on top of the **BAG bottom-nav button**
+in city/world view when the search bottom-sheet is closed. Mistapping
+once during a recheck dumped us into the Resources tab of BAG and
+took two `keyevent 4` rounds to recover (one of which triggered the
+"Exit the game?" prompt).
+
+Always assert the search panel is visible (a header reading "SEARCH"
+near y≈1530 + the resource-type tab row at y≈1850) **before** firing
+the SEARCH-button tap. If you're not sure the panel is open, snap
+first — or just tap the search magnifier at (115, 1950) again, which
+is idempotent.
+
+A safer pattern for re-cycling SEARCH inside an existing send loop:
+
+```bash
+# After Depart returns to the world map, the search panel may or may
+# not still be visible. Open it explicitly before the next SEARCH:
+adb shell input tap 115 1950   # search magnifier (idempotent)
+sleep 3
+adb shell input tap 540 2280   # SEARCH button — now safe
+```
+
+## Occupied-mine recovery
+
+After SEARCH, sometimes the panel that opens is the
+**Scout / Info / Attack** action diamond instead of the Gather
+marker. That means the mine is currently being gathered by another
+player. The fix is to **back out and re-search** — there's no Gather
+button to tap on this panel:
+
+```bash
+adb shell input keyevent 4    # close the action diamond
+sleep 2
+adb shell input tap 115 1950  # re-open search
+sleep 3
+adb shell input tap 540 2280  # SEARCH again — cycles to next mine
+```
+
+If the next SEARCH lands on the same mine repeatedly (3+ tries
+returning identical X/Y in the header), the area genuinely has no
+clean mines at the current Lv — try Lv4 or Lv6 instead, or switch to
+a different resource (Farm/Lumberyard/Quarry) for one cycle.
 
 ## The four-tap send sequence
 
