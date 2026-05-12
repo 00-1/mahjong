@@ -35,36 +35,62 @@ when the slider was at Lv6. Reach for the buttons first.
 
 ### MANDATORY: verify slider every cycle (added 2026-05-12)
 
-The slider **drifts down between cycles** — observed multiple times in
-the 2026-05-12 session. Sometimes by 1 (Lv5 → Lv4), sometimes by 4
-(Lv5 → Lv1). Cause unclear, possibly a stray tap during Depart
-animation that lands on the minus button, possibly state isn't truly
-preserved when the panel reopens.
+The slider **drifts down between cycles**. After 11 consecutive cron
+firings on 2026-05-12 (afternoon session), the drift is **extremely
+consistent**: slider opens at **Lv3** every single time when the
+panel is re-shown. Earlier morning observations of Lv1 and Lv2 drift
+turn out to be the same root cause — Lv1 only happened when the game
+had also reset state via a version update.
 
 Consequence of skipping the verify: **silent send failure**. Depart
-fires, no error, but no march goes out. One full cycle this session
-wasted 4 attempted sends this way (slider had drifted to Lv1, our
-castle/troops can't fill a Lv1 furnace so the dialog quietly aborts).
-Iron stockpile doesn't move; troop count stays the same as last cycle.
+fires, no error, but no march goes out. One full cycle wasted 4
+attempted sends this way (slider had drifted to Lv1).
 
-So: **after every (115, 1950) magnifier tap, before firing the
-SEARCH button**, snap a crop of `(y=1900..2050, x=0..1080)` and
-verify "Lv.5" is visible. If not, plus-button-tap up to it:
+**Simplest reliable pattern (use this):**
 
 ```bash
 adb shell input tap 115 1950          # open search panel
 sleep 5
+adb shell input tap 1015 1980         # plus once  (Lv3 → Lv4)
+sleep 1
+adb shell input tap 1015 1980         # plus twice (Lv4 → Lv5)
+sleep 2
+adb shell input tap 540 2280          # SEARCH button
+```
+
+That two-plus nudge handles the common Lv3 case unconditionally. If
+the slider somehow opens at a different level (post-update reset,
+Monster default, etc.), do a snap-and-verify before the SEARCH tap:
+
+```bash
 adb exec-out screencap -p > /tmp/slider_check.png
 # crop y=1900..2050, x=0..1080 and read the Lv.N indicator
 # If Lv < 5: tap plus (1015, 1980) by (5 - current_lv) times.
 # If Lv > 5: tap minus (70, 1980) by (current_lv - 5) times.
-adb shell input tap 540 2280          # SEARCH button — now safe
 ```
 
-If you skip this step and the slider has drifted, you'll send into a
-mine your troops can't fill, the cycle "completes" reporting success,
-but no march goes out. Next recheck will find you back at 1/5 or fewer
-than expected.
+Snap-verify only when you suspect the default has shifted (after an
+update, after the very first launch of a session, or after a long
+idle gap). For the steady-state recheck loop, two plus-taps is
+sufficient and avoids the extra screencap round-trip.
+
+### Post-version-update reset
+
+If PNC pushes an update mid-session, the search panel will open with
+the **Monster** tab selected at **Lv40** (the absolute defaults), not
+the Furnace+Lv5 state from before. Recovery is the full re-scroll:
+
+```bash
+adb shell input swipe 1000 1850 100 1850 500   # scroll tab row left
+sleep 3
+adb shell input tap 900 1845                   # Furnace tab
+sleep 3
+# now snap-verify slider — likely Lv3 (default for Furnace), plus to 5
+```
+
+Update prompts surface as "New version found, please install the
+latest update assets" with a CONFIRM button at (540, 1440). After
+confirm, expect ~30 s of loading splash before the city view appears.
 
 ## DO NOT tap (540, 2280) when no search panel is up
 
