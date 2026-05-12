@@ -33,6 +33,39 @@ The drag-thumb path used to work in the prior session but was flaky
 this run — multiple long drags at 1500ms and 2500ms both no-op'd
 when the slider was at Lv6. Reach for the buttons first.
 
+### MANDATORY: verify slider every cycle (added 2026-05-12)
+
+The slider **drifts down between cycles** — observed multiple times in
+the 2026-05-12 session. Sometimes by 1 (Lv5 → Lv4), sometimes by 4
+(Lv5 → Lv1). Cause unclear, possibly a stray tap during Depart
+animation that lands on the minus button, possibly state isn't truly
+preserved when the panel reopens.
+
+Consequence of skipping the verify: **silent send failure**. Depart
+fires, no error, but no march goes out. One full cycle this session
+wasted 4 attempted sends this way (slider had drifted to Lv1, our
+castle/troops can't fill a Lv1 furnace so the dialog quietly aborts).
+Iron stockpile doesn't move; troop count stays the same as last cycle.
+
+So: **after every (115, 1950) magnifier tap, before firing the
+SEARCH button**, snap a crop of `(y=1900..2050, x=0..1080)` and
+verify "Lv.5" is visible. If not, plus-button-tap up to it:
+
+```bash
+adb shell input tap 115 1950          # open search panel
+sleep 5
+adb exec-out screencap -p > /tmp/slider_check.png
+# crop y=1900..2050, x=0..1080 and read the Lv.N indicator
+# If Lv < 5: tap plus (1015, 1980) by (5 - current_lv) times.
+# If Lv > 5: tap minus (70, 1980) by (current_lv - 5) times.
+adb shell input tap 540 2280          # SEARCH button — now safe
+```
+
+If you skip this step and the slider has drifted, you'll send into a
+mine your troops can't fill, the cycle "completes" reporting success,
+but no march goes out. Next recheck will find you back at 1/5 or fewer
+than expected.
+
 ## DO NOT tap (540, 2280) when no search panel is up
 
 The SEARCH-button coord lies on top of the **BAG bottom-nav button**
@@ -137,6 +170,19 @@ Things that landed during this run and how to dismiss:
   `K<not-our-realm>` (e.g. `K232 (RUS)`), the march will still send,
   but it's slower travel. Acceptable for one-offs. To force home
   realm, tap SEARCH again to cycle to a closer mine.
+- **Android "Turn on Battery saver" prompt** (added 2026-05-12): Android
+  system dialog that pops over the PNC screen when battery dips below
+  the configured threshold or the phone has been unplugged a while.
+  Two buttons: **"Got it"** (left, declines) and **"Battery saver"**
+  (right, enables — which will break adb input injection on some
+  HyperOS builds; do NOT tap). Tap **Got it** at **(285, 2310)**, then
+  re-launch PNC via `monkey` since the dialog backgrounded it.
+- **"Connection failed. Do you want to reconnect?"** popping up *after*
+  the previous recovery is its own thing — the Battery-saver dialog
+  often disconnects PNC's session. Tap **CONFIRM** at **(540, 1440)**
+  and give it ~8 s to reconnect before snapping. May be followed by a
+  Mythic Hero / event promo card (close X at (1005, 390)) or a chat
+  panel (`keyevent 4` ×2).
 
 ## What this session ran in practice
 
