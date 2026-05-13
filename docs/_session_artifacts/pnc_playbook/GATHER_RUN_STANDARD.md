@@ -33,46 +33,46 @@ The drag-thumb path used to work in the prior session but was flaky
 this run — multiple long drags at 1500ms and 2500ms both no-op'd
 when the slider was at Lv6. Reach for the buttons first.
 
-### MANDATORY: verify slider every cycle (added 2026-05-12)
+### MANDATORY: snap-and-verify the slider every cycle (revised 2026-05-13)
 
-The slider **drifts down between cycles**. After 11 consecutive cron
-firings on 2026-05-12 (afternoon session), the drift is **extremely
-consistent**: slider opens at **Lv3** every single time when the
-panel is re-shown. Earlier morning observations of Lv1 and Lv2 drift
-turn out to be the same root cause — Lv1 only happened when the game
-had also reset state via a version update.
+The slider's opening state is **non-deterministic**. Four distinct
+behaviours observed across two days of cron-driven cycles:
+
+| Opening state | When seen | Fix |
+|---|---|---|
+| **Lv5** (preserved) | Steady-state, most cron-driven re-opens once the loop has settled | none — proceed |
+| **Lv3** (Furnace default-ish) | Common drift on 2026-05-12 afternoon — 11 cycles in a row | plus×2 at (1015, 1980) |
+| **Lv7** (Furnace max default) | First cycle after a long idle gap, or first cycle of a fresh session | minus×2 at (70, 1980) |
+| **Monster Lv40** (absolute default) | After a PNC version update or full game restart — Furnace tab itself isn't selected | full re-scroll, see "Post-version-update reset" below |
 
 Consequence of skipping the verify: **silent send failure**. Depart
-fires, no error, but no march goes out. One full cycle wasted 4
-attempted sends this way (slider had drifted to Lv1).
+fires, no error, but no march goes out. Earlier sessions wasted 4
+attempted sends per cycle this way (slider had drifted to Lv1, and the
+sender just kept tapping Depart on Lv1 furnaces our troops can't fill).
 
-**Simplest reliable pattern (use this):**
+There is no shortcut. **Always snap-and-verify** before the SEARCH
+button:
 
 ```bash
 adb shell input tap 115 1950          # open search panel
 sleep 5
-adb shell input tap 1015 1980         # plus once  (Lv3 → Lv4)
-sleep 1
-adb shell input tap 1015 1980         # plus twice (Lv4 → Lv5)
-sleep 2
-adb shell input tap 540 2280          # SEARCH button
+adb exec-out screencap -p > ~/snaps/slider_check.png
+# Crop y=1900..2050, x=0..1080 of the screencap and read the Lv.N
+# indicator (the gold "Lv.N" text just above the slider thumb).
+# If "Lv.5" — proceed.
+# If "Lv.N" with N < 5: tap plus (1015, 1980) by (5 - N) times,
+#                       sleep 1 between taps.
+# If "Lv.N" with N > 5: tap minus (70, 1980) by (N - 5) times,
+#                       sleep 1 between taps.
+# If "Monster" or "Lv.40": tab isn't on Furnace — see Post-update.
+adb shell input tap 540 2280          # SEARCH button — now safe
 ```
 
-That two-plus nudge handles the common Lv3 case unconditionally. If
-the slider somehow opens at a different level (post-update reset,
-Monster default, etc.), do a snap-and-verify before the SEARCH tap:
-
-```bash
-adb exec-out screencap -p > /tmp/slider_check.png
-# crop y=1900..2050, x=0..1080 and read the Lv.N indicator
-# If Lv < 5: tap plus (1015, 1980) by (5 - current_lv) times.
-# If Lv > 5: tap minus (70, 1980) by (current_lv - 5) times.
-```
-
-Snap-verify only when you suspect the default has shifted (after an
-update, after the very first launch of a session, or after a long
-idle gap). For the steady-state recheck loop, two plus-taps is
-sufficient and avoids the extra screencap round-trip.
+The previous version of this doc recommended "always +2" as a
+shortcut for the Lv3 case. That's wrong: it overshoots to Lv7 when
+the slider was already at Lv5 (saw this on 2026-05-13). Always
+verify. The screencap round-trip costs <500 ms — far less than the
+cost of a silently-failed cycle.
 
 ### Post-version-update reset
 
