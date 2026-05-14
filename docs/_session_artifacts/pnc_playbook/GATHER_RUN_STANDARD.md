@@ -209,6 +209,25 @@ Things that landed during this run and how to dismiss:
   and give it ~8 s to reconnect before snapping. May be followed by a
   Mythic Hero / event promo card (close X at (1005, 390)) or a chat
   panel (`keyevent 4` ×2).
+- **"New version found, please install the latest update assets"**
+  (added 2026-05-12, recurred 2026-05-14): PNC update prompt with
+  CONFIRM at **(540, 1440)**. Wait ~25 s for the loading splash
+  ("Checking version number… 100%"). Will land on city view via the
+  Mythic Hero / Curio / Alliance Duel popup chain (see below).
+- **"Curio" / Rusty Alloy popup** (added 2026-05-13): crafting-status
+  card with a GO button. Close X at **(1005, 435)**. Surfaces after
+  PNC updates and after long-idle relaunches.
+- **"Alliance Duel Begins" popup** (added 2026-05-14): K255 vs K277
+  hero-growth scoreboard with quest reminders. Close X at top-right,
+  approximately **(990, 585)** (slightly lower than the Mythic Hero /
+  Curio Xs because the Duel popup is taller). Surfaces after game
+  updates / first-launch-of-day.
+
+The full popup chain after a PNC update is, in order:
+`Connection-failed → New-version-found → splash → Mythic Hero →
+Alliance Duel → Curio`. Not all four always appear, but they always
+appear in that order. Plan for ~30 s of dismissal taps before the
+city view is actually usable.
 
 ## What this session ran in practice
 
