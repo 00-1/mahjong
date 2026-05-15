@@ -15,6 +15,8 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
 from src.pnc.state import (  # noqa: E402
+    detect_battle_skip,
+    detect_mine_info_popup,
     detect_popup,
     find_mine_tiles,
     in_world_view,
@@ -170,6 +172,50 @@ def test_sapphire_idle_in_city_view():
         f"expected idle, got {panel.state}"
 
 
+# ---------- battle / popup detection on post-Depart screens ----------
+
+
+def test_battle_skip_button_found_during_battle():
+    """Battle animation has the SKIP chevron at ~(979, 2083)."""
+    bgr = load("battle_animation.png")
+    xy = detect_battle_skip(bgr)
+    assert xy is not None, "missed SKIP button on battle screen"
+    assert 950 <= xy[0] <= 1010, f"SKIP x outside expected band: {xy}"
+    assert 2030 <= xy[1] <= 2110, f"SKIP y outside expected band: {xy}"
+
+
+def test_battle_skip_false_positive_on_city_view():
+    """The city view has yellow icons in the bottom-nav (BAG, etc.)
+    that the previous wider battle-skip ROI was matching. Tightening
+    x to 900..1010 must now reject the city-view false positive."""
+    bgr = load("city_view_clean.png")
+    assert detect_battle_skip(bgr) is None
+
+
+def test_mine_info_popup_returns_pillage_button_xy():
+    """When the Mine Info popup is on screen, detect_mine_info_popup
+    returns the centre of the Pillage CTA at (772, 1689) ± a few px."""
+    bgr = load("mine_info_popup.png")
+    xy = detect_mine_info_popup(bgr)
+    assert xy is not None, "missed Pillage CTA on Mine Info popup"
+    assert 700 <= xy[0] <= 850, f"Pillage x off: {xy}"
+    assert 1640 <= xy[1] <= 1740, f"Pillage y off: {xy}"
+
+
+def test_mine_info_popup_none_on_pickaxe_modal():
+    """Pickaxe-tip modal has TWO yellow CTAs at this y — must not
+    misclassify as Mine Info (which has only one, right-side)."""
+    bgr = load("pickaxe_tip_modal.png")
+    assert detect_mine_info_popup(bgr) is None
+
+
+def test_mine_info_popup_none_on_unprotected_pit():
+    """The unprotected-pit modal has a single CENTRED yellow CTA at
+    x≈540 — must not match Mine Info's right-side signature."""
+    bgr = load("unprotected_pit_modal.png")
+    assert detect_mine_info_popup(bgr) is None
+
+
 def test_idle_side_panel_state_is_known():
     """Smoke test the side-panel reader against the saved IDLE crop.
     The crop fixture isn't full-screen so we just verify the function
@@ -200,6 +246,11 @@ def _run_all():
         test_sapphire_active_in_city_view,
         test_sapphire_idle_in_city_view,
         test_idle_side_panel_state_is_known,
+        test_battle_skip_button_found_during_battle,
+        test_battle_skip_false_positive_on_city_view,
+        test_mine_info_popup_returns_pillage_button_xy,
+        test_mine_info_popup_none_on_pickaxe_modal,
+        test_mine_info_popup_none_on_unprotected_pit,
     ]
     failures = []
     for t in tests:

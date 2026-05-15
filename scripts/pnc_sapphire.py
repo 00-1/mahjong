@@ -32,7 +32,12 @@ sys.path.insert(0, str(ROOT))
 
 import cv2
 
-from src.pnc.state import find_mine_tiles, MineTile
+from src.pnc.state import (
+    detect_battle_skip,
+    detect_popup,
+    find_mine_tiles,
+    MineTile,
+)
 
 
 # Calibrated taps (1080×2400). All confirmed during the 2026-05-15
@@ -221,17 +226,77 @@ def main() -> int:
 
     emit("march_dispatched", target_flag=target.flag, target_xy=[target.cx, target.cy])
 
-    # Step 9: brief verify — re-snap and confirm Recall button is back
-    # (means the march landed on the mine and is now actively gathering /
-    # pillaging) OR a "marching" indicator is up.
-    time.sleep(2)
-    bgr = snap(tmp)
-    if bgr is not None and detect_recall_button(bgr):
-        emit("verify_ok", note="recall button visible — march active")
+    # Step 9: verify pillage / gather actually landed.
+    #
+    # For an empty-mine gather: troops simply travel and start gathering;
+    # the recall button shows up on the mine grid once they land.
+    #
+    # For a pillage: troops travel → battle animation (yellow SKIP at
+    # ~980,2080) → Victory/Defeat dialog → back to mine grid. If we
+    # won, the recall button shows up. If we lost, no recall.
+    #
+    # We loop snap-and-handle for up to verify_timeout_seconds, tapping
+    # SKIP / dismissing battery-saver / closing popups as they appear.
+    # Success signal: detect_recall_button → True.
+    if target.flag == "skull_no_horns":
+        ok = verify_pillage_success(tmp, args.shot_dir)
+        emit("pillage_verify", success=ok)
+        return 0 if ok else 1
+    else:
+        # Gather flow — shorter wait, no battle expected.
+        time.sleep(2)
+        bgr = snap(tmp)
+        if bgr is not None and detect_recall_button(bgr):
+            emit("verify_ok", note="recall button visible — gather active")
+            return 0
+        emit("verify_pending", note="no recall button yet; march may be in transit")
         return 0
-    # Else: march might still be in transit; give a soft success.
-    emit("verify_pending", note="no recall button yet; march may be in transit")
-    return 0
+
+
+def verify_pillage_success(tmp: Path, shot_dir: Path,
+                           timeout_seconds: int = 90,
+                           poll_interval: int = 4) -> bool:
+    """After Depart on a pillage, walk through battle-skip / victory /
+    popup screens until we either see the recall button (success) or
+    time out (likely defeated). Returns True on success."""
+    deadline = time.time() + timeout_seconds
+    skip_taps = 0
+    popup_taps = 0
+    while time.time() < deadline:
+        bgr = snap(tmp)
+        if bgr is None:
+            time.sleep(poll_interval)
+            continue
+        # Highest priority: the SKIP chevron during battle animation.
+        skip = detect_battle_skip(bgr)
+        if skip is not None:
+            emit("battle_skip_tap", xy=list(skip))
+            tap(*skip)
+            skip_taps += 1
+            time.sleep(2)
+            continue
+        # Next: any known popup (battery saver, mythic hero, etc).
+        popup = detect_popup(bgr)
+        if popup is not None:
+            cx, cy = popup.confirm_xy or popup.close_xy
+            emit("popup_dismiss", name=popup.name, xy=[cx, cy])
+            tap(cx, cy)
+            popup_taps += 1
+            time.sleep(3)
+            continue
+        # Success: recall button means our troops are on the mine.
+        if detect_recall_button(bgr):
+            emit("verify_recall_visible", skip_taps=skip_taps,
+                 popup_taps=popup_taps)
+            return True
+        # Otherwise it's a transient screen (post-battle dialog,
+        # blank loading frame) — wait and try again. A centre tap
+        # nudges the Victory dialog to dismiss without targeting a
+        # specific button.
+        tap(540, 1200)
+        time.sleep(poll_interval)
+    emit("verify_timeout", skip_taps=skip_taps, popup_taps=popup_taps)
+    return False
 
 
 if __name__ == "__main__":

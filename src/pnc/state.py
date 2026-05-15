@@ -408,6 +408,59 @@ def _dedupe_tiles(tiles: list[MineTile], min_dist: int = 80) -> list[MineTile]:
     return out
 
 
+# ---------- post-Depart battle / mine-info screen detection ----------
+
+
+def detect_battle_skip(bgr: np.ndarray) -> tuple[int, int] | None:
+    """Return the tap point of the yellow SKIP chevron during a
+    sapphire-mine battle animation, or None if the screen isn't a
+    battle.
+
+    Signature: a small yellow chevron-arrow at x≈980 y≈2080 on the
+    bottom-right of the battle screen. Tight x bounds (900..1010)
+    exclude the BAG/Mail icon-row in city view, which also has
+    yellow blobs in this y-band but at x>1019.
+    """
+    roi = bgr[2030:2110, 900:1010]
+    if roi.size == 0:
+        return None
+    hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
+    yellow = cv2.inRange(hsv, np.array([15, 100, 150]), np.array([30, 255, 255]))
+    contours, _ = cv2.findContours(yellow, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    candidates = [c for c in contours if 400 < cv2.contourArea(c) < 3000]
+    if not candidates:
+        return None
+    c = max(candidates, key=cv2.contourArea)
+    x, y, w, h = cv2.boundingRect(c)
+    return (900 + x + w // 2, 2030 + y + h // 2)
+
+
+def detect_mine_info_popup(bgr: np.ndarray) -> tuple[int, int] | None:
+    """Return the tap point of the Pillage button on the Mine Info
+    popup, or None.
+
+    Signature: very large yellow CTA (≈45 000 px² in the canonical
+    fixture) on the lower-right of the popup card around y=1689. The
+    twin pickaxe-tip modal also has yellow CTAs at this y but PAIRED
+    (one each at x≈308 and x≈772) — we treat single-yellow at right
+    as Mine Info.
+    """
+    band = bgr[1640:1740, :]
+    if band.size == 0:
+        return None
+    hsv = cv2.cvtColor(band, cv2.COLOR_BGR2HSV)
+    yellow = cv2.inRange(hsv, np.array([15, 70, 120]), np.array([30, 255, 255]))
+    contours, _ = cv2.findContours(yellow, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    big = [c for c in contours if cv2.contourArea(c) > 20000]
+    if len(big) != 1:
+        return None
+    x, y, w, h = cv2.boundingRect(big[0])
+    cx = x + w // 2
+    if cx < 540:
+        return None   # Left-side CTA → not Mine Info
+    return (cx, 1640 + y + h // 2)
+
+
 # ---------- header reads on the Lv.8 mine view ----------
 
 
@@ -500,6 +553,8 @@ __all__ = [
     "MineTile",
     "SapphireSidePanel",
     "TroopInfo",
+    "detect_battle_skip",
+    "detect_mine_info_popup",
     "detect_popup",
     "find_mine_tiles",
     "read_lv8_header",
