@@ -20,6 +20,7 @@ from src.pnc.state import (  # noqa: E402
     detect_popup,
     find_mine_tiles,
     in_world_view,
+    read_pillage_attempts_available,
     read_sapphire_sidepanel,
     read_troop_count,
 )
@@ -216,6 +217,17 @@ def test_mine_info_popup_none_on_unprotected_pit():
     assert detect_mine_info_popup(bgr) is None
 
 
+def test_pillage_attempts_header_visible_on_lv8_grid():
+    """Both section-1 and section-2 live-run grids show
+    'Pillage Attempts:4' — the header reader must say the row is
+    visible (True). City and world fixtures must return None."""
+    assert read_pillage_attempts_available(load("lv8_grid_all_horned_section1.png")) is True
+    assert read_pillage_attempts_available(load("lv8_grid_section2_has_skull.png")) is True
+    assert read_pillage_attempts_available(load("sapphire_lv8_mine_after_depart.png")) is True
+    assert read_pillage_attempts_available(load("city_view_clean.png")) is None
+    assert read_pillage_attempts_available(load("world_view_clean.png")) is None
+
+
 def test_idle_side_panel_state_is_known():
     """Smoke test the side-panel reader against the saved IDLE crop.
     The crop fixture isn't full-screen so we just verify the function
@@ -251,6 +263,7 @@ def _run_all():
         test_mine_info_popup_returns_pillage_button_xy,
         test_mine_info_popup_none_on_pickaxe_modal,
         test_mine_info_popup_none_on_unprotected_pit,
+        test_pillage_attempts_header_visible_on_lv8_grid,
     ]
     failures = []
     for t in tests:

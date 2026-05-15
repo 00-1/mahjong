@@ -36,6 +36,7 @@ from src.pnc.state import (
     detect_battle_skip,
     detect_popup,
     find_mine_tiles,
+    read_pillage_attempts_available,
     MineTile,
 )
 
@@ -181,10 +182,17 @@ def main() -> int:
     if args.assume_pillage_attempts is not None:
         pillage_attempts = args.assume_pillage_attempts
     else:
-        # Until the header OCR lands, conservatively assume we DO have
-        # pillage attempts. If the target tap fails on Pillage button
-        # (no Mine Info popup), fall back to empty mine.
-        pillage_attempts = 4
+        # Read the Pillage Attempts row on the Lv.8 header. The current
+        # detector is presence/absence only (True when the row is
+        # legible, None when the header isn't visible). We don't yet
+        # distinguish 0 vs N>0 — that needs a Pillage Attempts:0
+        # fixture we don't have. If the row is visible we optimistically
+        # treat it as "≥1 attempt"; if the Pillage button later fails
+        # to surface a Mine Info popup, the script falls through to
+        # an empty-mine target anyway.
+        header_visible = read_pillage_attempts_available(bgr)
+        emit("pillage_attempts_header", visible=header_visible)
+        pillage_attempts = 4 if header_visible else 0
 
     target = None
     sections_scanned = 0

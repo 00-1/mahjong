@@ -464,30 +464,47 @@ def detect_mine_info_popup(bgr: np.ndarray) -> tuple[int, int] | None:
 # ---------- header reads on the Lv.8 mine view ----------
 
 
+def read_pillage_attempts_available(bgr: np.ndarray) -> bool | None:
+    """Return True if the Lv.8 mine header is visible and the "Pillage
+    Attempts:" row has a digit on the right, None if the header isn't
+    visible at all.
+
+    We currently don't distinguish 0 from N>0 — that requires a digit
+    OCR pass we haven't built and a "Pillage Attempts:0" fixture we
+    don't have. For now this returns True (header up, row present) or
+    None (no header), and the caller treats both as "safe to attempt".
+
+    The richer return signature is preserved so a future commit can
+    plug in the 0-vs-N classifier without breaking callers.
+    """
+    # Look across the full y=280..315 row width — "Pillage Attempts:N"
+    # is rendered as ~15+ contiguous glyph blobs because every letter
+    # is a separate connected component. World/city fixtures have a
+    # scattered handful (5-8) of bright UI blobs in this band.
+    band = bgr[280:315, 600:1080]
+    if band.size == 0:
+        return None
+    gray = cv2.cvtColor(band, cv2.COLOR_BGR2GRAY)
+    bw = (gray > 140).astype(np.uint8) * 255
+    n, _, stats, _ = cv2.connectedComponentsWithStats(bw)
+    digit_like = [i for i in range(1, n)
+                  if 60 < stats[i, 4] < 500 and 5 < stats[i, 3] < 30]
+    if len(digit_like) < 12:
+        return None
+    return True
+
+
 def read_lv8_header(bgr: np.ndarray) -> dict:
     """Read the Lv.8 Mine header: pillage attempts, excavation time,
     output rate, sapphire balance.
 
-    Returns a dict (or empty dict if not on the Lv.8 mine screen).
-    Currently a placeholder — populate fields as we add OCR for each
-    line. Pillage attempts is the highest priority since the script
-    branches on it.
+    Currently exposes only pillage_attempts (True/False/None). The
+    other fields (timer parse, output rate) require digit OCR and
+    are deferred until needed.
     """
-    out: dict = {}
-
-    # "Pillage Attempts:N" appears around y=180..220 on the right side
-    # (after "Excavation Time"). Detection: find the white text strip
-    # right of x=600 in that y range.
-    header = bgr[100:240, 500:1080]
-    if header.size == 0:
-        return out
-
-    # Cheap binary read: find the digit right after "Pillage Attempts:"
-    # Without OCR, we estimate by counting the bright pixel area in
-    # the digit column. Fallback: return None and let the caller
-    # treat unknown as "play it safe — find empty mine, not pillage".
-    out["pillage_attempts"] = None  # TODO OCR
-    return out
+    return {
+        "pillage_attempts": read_pillage_attempts_available(bgr),
+    }
 
 
 # ---------- sapphire side-panel state ----------
@@ -558,6 +575,7 @@ __all__ = [
     "detect_popup",
     "find_mine_tiles",
     "read_lv8_header",
+    "read_pillage_attempts_available",
     "read_sapphire_sidepanel",
     "read_troop_count",
     "read_search_panel_lv",
