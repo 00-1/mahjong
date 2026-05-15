@@ -93,32 +93,30 @@ Confirmed.
   no march is currently out — but the Lv.8 mine has an internal
   Excavation Time independent of personal marches. Needs verification.
 
-## Build-to-script direction (added 2026-05-15)
+## Scripts (status as of 2026-05-09)
 
-User wants the known PNC processes scripted so the LLM isn't in the
-loop for every step. Priority order:
+All four planned scripts are now implemented and validated against
+fixtures in `tests/pnc/fixtures/`. The cron infrastructure stays —
+scripts are what the cron prompt should `subprocess.run()` instead of
+an LLM rerunning the procedure from notes.
 
-1. **`pnc_popup_dismiss.py`** — wraps the post-launch popup chain
-   (Connection-failed → New-version-found → Mythic Hero → Alliance
-   Duel → Curio) plus Battery saver. Each is a snap-and-tap with
-   well-known buttons. This script should idempotently dismiss
-   whatever's on screen until it sees city or world view.
+| Script | Status | Live-tested? |
+|---|---|---|
+| `scripts/pnc_popup_dismiss.py` | done | yes — dismissed Mythic Hero in 2 rounds |
+| `scripts/pnc_iron_gather.py` | done | not yet (built offline against fixtures) |
+| `scripts/pnc_sapphire.py` | done — recall+pillage+depart wired | yes — pillage flow ran end-to-end manually |
+| `src/pnc/state.py` | done — `detect_popup`, `find_mine_tiles`, `read_sapphire_sidepanel`, `read_troop_count`, `in_world_view`, `read_search_panel_lv` | covered by 10-test suite |
+| `src/pnc/cadence.py` | done — `next_recheck(troops)` returns delay seconds + reason | covered by 6-test suite |
 
-2. **`pnc_iron_gather.py`** — replaces the cron-driven iron loop:
-   ensure city → world → snap troop info → for each free slot run
-   the SEARCH + Furnace Lv5 + 4-tap send. Schedule next recheck
-   based on timer cluster (per `GATHER_RUN_STANDARD.md`).
+Open work tracked elsewhere: pillage-attempts header OCR, sapphire
+timer HH:MM:SS parsing, pillage-success Mail check, page-jump (1114)
+implementation. None block the existing scripts; they just expand
+their decision space.
 
-3. **`pnc_sapphire.py`** — once the recall + main-march flow is
-   verified manually, wrap it with the same pattern:
-   read sapphire timer, decide (act / wait / recall+send), execute,
-   schedule next recheck.
+Run all PNC tests:
 
-4. **`pnc_state.py`** — shared library: read troop count from world
-   map, slider Lv from search panel, sapphire timer from side panel,
-   pillage attempts from Lv.8 mine header. Each is a cv2-based read
-   from a known crop region.
+```bash
+for t in tests/pnc/test_*.py; do echo "=== $t ==="; python3 "$t" || break; done
+```
 
-The cron infrastructure stays — scripts are just what the cron prompt
-should `subprocess.run()` instead of an LLM rerunning the procedure
-from notes. Same kill switch (Ctrl+C / killing the script) applies.
+Same kill switch (Ctrl+C / killing the script) applies as before.

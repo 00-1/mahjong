@@ -17,7 +17,9 @@ sys.path.insert(0, str(ROOT))
 from src.pnc.state import (  # noqa: E402
     detect_popup,
     find_mine_tiles,
+    in_world_view,
     read_sapphire_sidepanel,
+    read_troop_count,
 )
 
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -87,7 +89,62 @@ def test_detect_no_popup_on_mine_grid():
     assert popup is None, f"false-positive popup: {popup}"
 
 
+def test_detect_connection_failed_popup():
+    """The 'Connection failed. Do you want to reconnect?' Tip card
+    should be recognized as generic_tip_confirm so popup_dismiss
+    taps CONFIRM at (540, 1440)."""
+    bgr = load("popup_connection_failed.png")
+    popup = detect_popup(bgr)
+    assert popup is not None, "missed the popup"
+    assert popup.name == "generic_tip_confirm"
+    assert popup.confirm_xy == (540, 1440)
+
+
+def test_detect_mythic_hero_popup():
+    """Mythic Hero promo should be recognized so popup_dismiss
+    taps the close X at (1005, 390). Mythic Hero must NOT be
+    classified as generic_tip_confirm — the latter taps the centre
+    of the card, which on Mythic Hero hits a purchase item."""
+    bgr = load("popup_mythic_hero.png")
+    popup = detect_popup(bgr)
+    assert popup is not None, "missed the popup"
+    assert popup.name == "mythic_hero", \
+        f"misclassified as {popup.name} — would have hit a purchase item"
+    assert popup.close_xy == (1005, 390)
+
+
 # ---------- sapphire side panel ----------
+
+
+def test_view_detection():
+    """City vs world view, used by other readers as a gate."""
+    city = load("city_view_clean.png")
+    world = load("world_view_clean.png")
+    assert in_world_view(city) is False, "city misidentified as world"
+    assert in_world_view(world) is True, "world misidentified as city"
+
+
+def test_troop_count_5of5():
+    """World fixture has Troop Info (5/5) — five active gathering rows."""
+    world = load("world_view_clean.png")
+    info = read_troop_count(world)
+    assert info.n_active == 5, f"expected 5 active troops, got {info.n_active}"
+
+
+def test_troop_count_returns_none_on_city():
+    """City view has no Troop Info panel — reader returns None."""
+    city = load("city_view_clean.png")
+    info = read_troop_count(city)
+    assert info.n_active is None, \
+        f"city view should give n_active=None, got {info.n_active}"
+
+
+def test_sapphire_active_in_city_view():
+    """City fixture shows 'Gathering 06:35:43' on sapphire row."""
+    city = load("city_view_clean.png")
+    panel = read_sapphire_sidepanel(city)
+    assert panel.state == "active", \
+        f"expected sapphire active, got {panel.state}"
 
 
 def test_idle_side_panel_state_is_known():
@@ -112,6 +169,12 @@ def _run_all():
         test_lv8_mine_grid_after_depart_detects_skull_no_horns,
         test_lv8_mine_grid_percent_reads_are_plausible,
         test_detect_no_popup_on_mine_grid,
+        test_detect_connection_failed_popup,
+        test_detect_mythic_hero_popup,
+        test_view_detection,
+        test_troop_count_5of5,
+        test_troop_count_returns_none_on_city,
+        test_sapphire_active_in_city_view,
         test_idle_side_panel_state_is_known,
     ]
     failures = []

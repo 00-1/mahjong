@@ -77,23 +77,19 @@ def detect_popup(bgr: np.ndarray) -> Optional[Popup]:
     # is always on a darkblue panel background.
     # We sample distinctive header pixels to disambiguate.
 
-    # Connection-failed: short card centered, no X, just CONFIRM at (540, 1440)
-    if _has_text_color(bgr, x=320, y=1320, w=440, h=80,
-                       hue_range=(95, 110), sat_min=10, val_min=40,
-                       hit_threshold=0.20):
-        # "Connection failed" / "New version found" / generic Tip with
-        # CONFIRM button. Distinguish by content height — keep it
-        # simple: tap the CONFIRM coord which is the same for both.
-        return Popup(name="generic_tip_confirm",
-                     close_xy=(540, 1440),
-                     confirm_xy=(540, 1440))
+    # Detection ordered: most-specific signatures FIRST. The
+    # generic_tip_confirm fallback is intentionally last because it
+    # matches on a generic navy-blue panel that several other popups
+    # also have.
 
-    # Mythic Hero: tall card with fire/orange background
-    if _yellow_pixels_near(bgr, cx=1005, cy=390, radius=40) and \
-            _orange_pixels_near(bgr, cx=540, cy=900, radius=60):
+    # Mythic Hero: tall card with prominent orange/fire flames bottom
+    # and a yellow GBP-price button about (540, 1900). The close X
+    # itself is whitish, not a reliable signal.
+    if _orange_pixels_near(bgr, cx=540, cy=900, radius=60) and \
+            _yellow_pixels_near(bgr, cx=540, cy=1907, radius=80):
         return Popup(name="mythic_hero", close_xy=(1005, 390))
 
-    # Alliance Duel Begins: card with VS shield, K255 vs K277 labels
+    # Alliance Duel Begins: VS shield, red-blue card split
     if _yellow_pixels_near(bgr, cx=990, cy=585, radius=40) and \
             _red_blue_split_near(bgr, cy=900):
         return Popup(name="alliance_duel", close_xy=(990, 585))
@@ -113,17 +109,46 @@ def detect_popup(bgr: np.ndarray) -> Optional[Popup]:
             _has_text_color(bgr, x=80, y=130, w=300, h=80,
                             hue_range=(20, 35), sat_min=100, val_min=180,
                             hit_threshold=0.10):
-        # Daily Discount tab visible — Limited Offer panel
         return Popup(name="limited_offer", close_xy=(540, 0))  # back-key sentinel
 
-    # Battery saver Android dialog: dark, has "Got it" rounded button
+    # Battery saver Android dialog: dark background, "Got it" button
+    # Distinguished from PNC popups by overall darkness above y=1900
     if _has_text_color(bgr, x=80, y=2270, w=200, h=80,
                        hue_range=(0, 180), sat_min=0, val_min=80,
                        hit_threshold=0.30) and \
             _crop_mean_hsv(bgr, 0, 1900, 1080, 100)[2] < 50:
         return Popup(name="battery_saver", close_xy=(285, 2310))
 
+    # Generic Tip + CONFIRM card: must come LAST because the
+    # navy-blue interior matches many other popups too. Distinguish
+    # via panel SIZE: this Tip card has a CONFIRM button centered
+    # around (540, 1440) AND no other distinctive popup signature
+    # higher up. We require the centered CONFIRM-shaped grey button.
+    if _has_text_color(bgr, x=320, y=1320, w=440, h=160,
+                       hue_range=(100, 130), sat_min=60, val_min=50,
+                       hit_threshold=0.40) and \
+            _has_grey_button_near(bgr, cx=540, cy=1440):
+        return Popup(name="generic_tip_confirm",
+                     close_xy=(540, 1440),
+                     confirm_xy=(540, 1440))
+
     return None
+
+
+def _has_grey_button_near(bgr: np.ndarray, cx: int, cy: int, w: int = 200, h: int = 80) -> bool:
+    """The generic Tip CONFIRM button is a desaturated light-blue/grey
+    rounded rectangle (HSV mean ~ hue 110, sat 90, val 165 from
+    fixtures). Distinguishes from the saturated-yellow Mythic /
+    Curio CTAs."""
+    x0 = max(0, cx - w // 2)
+    y0 = max(0, cy - h // 2)
+    crop = bgr[y0:y0 + h, x0:x0 + w]
+    if crop.size == 0:
+        return False
+    hsv = cv2.cvtColor(crop, cv2.COLOR_BGR2HSV)
+    # Light desaturated blue/grey button colour
+    button = cv2.inRange(hsv, np.array([90, 30, 130]), np.array([130, 130, 220]))
+    return (button > 0).mean() > 0.20
 
 
 def _yellow_pixels_near(bgr: np.ndarray, cx: int, cy: int, radius: int) -> bool:
@@ -455,8 +480,128 @@ __all__ = [
     "Popup",
     "MineTile",
     "SapphireSidePanel",
+    "TroopInfo",
     "detect_popup",
     "find_mine_tiles",
     "read_lv8_header",
     "read_sapphire_sidepanel",
+    "read_troop_count",
+    "read_search_panel_lv",
+    "in_world_view",
 ]
+
+
+# ---------- world-map troop count ----------
+
+@dataclass
+class TroopInfo:
+    """Header reads off the world-map Troop Info panel."""
+    n_active: int | None     # 0..5 (None when panel not visible)
+    n_total: int = 5         # always 5 for our castle
+
+
+def read_troop_count(bgr: np.ndarray) -> TroopInfo:
+    """Parse the 'Troop Info (N/5)' header in the world-view top-left.
+
+    Approach: count the visible Gathering / Marching / Returning rows
+    in the panel. Each row is the same height (~70px) and starts at
+    a known y. Counting by row-detection avoids needing OCR for the
+    header text.
+
+    Returns n_active=None when not on world view (panel absent).
+    """
+    if not in_world_view(bgr):
+        return TroopInfo(n_active=None)
+
+    # The Troop Info panel is in the top-left of world view at
+    # roughly x=0..420, y=240..830.
+    panel = bgr[240:830, 0:420]
+    if panel.size == 0:
+        return TroopInfo(n_active=None)
+
+    # Each row has a tealish-cyan timer text and a row separator.
+    # Detect rows via the timer-text colour band.
+    hsv = cv2.cvtColor(panel, cv2.COLOR_BGR2HSV)
+    # Tealish: hue ~70-100, mid-high sat
+    teal = cv2.inRange(hsv, np.array([70, 60, 120]), np.array([100, 255, 255]))
+    # Sum per row
+    row_signal = teal.sum(axis=1)
+    # Find local peaks above a threshold
+    threshold = max(row_signal.max() * 0.15, 200)
+    in_row = row_signal > threshold
+    # Count contiguous true regions
+    n_rows = 0
+    i = 0
+    while i < len(in_row):
+        if in_row[i]:
+            n_rows += 1
+            while i < len(in_row) and in_row[i]:
+                i += 1
+        i += 1
+    if n_rows == 0:
+        return TroopInfo(n_active=None)
+    return TroopInfo(n_active=min(5, n_rows), n_total=5)
+
+
+def in_world_view(bgr: np.ndarray) -> bool:
+    """Heuristic: in world view the leftmost bottom-nav label is
+    'WORLD' rendered in WHITE (inactive label colour). In city view
+    the same slot is 'HOME' rendered in GOLD (active label colour).
+    Detect via gold-pixel mass in the leftmost bottom-nav region.
+    """
+    nav = bgr[2300:2400, 50:200]
+    if nav.size == 0:
+        return False
+    hsv = cv2.cvtColor(nav, cv2.COLOR_BGR2HSV)
+    gold = cv2.inRange(hsv, np.array([15, 100, 100]), np.array([40, 255, 255]))
+    # City: HOME label is gold (lots of gold pixels)
+    # World: WORLD label is white (low gold pixels)
+    gold_density = (gold > 0).mean()
+    return bool(gold_density < 0.05)
+
+
+# ---------- search-panel slider ----------
+
+
+def read_search_panel_lv(bgr: np.ndarray) -> int | None:
+    """Read the Lv.N indicator above the slider in the search panel.
+
+    The label is gold "Lv.N" text at approximately (550, 1955) above
+    the slider. Without OCR we estimate N from the slider thumb
+    position: the slider track spans roughly x=130..1000 with N steps
+    (Lv1..Lv7 for Furnace).
+
+    Returns 1..7 for Furnace, 1..40 for Monster, etc., or None if
+    the panel isn't open.
+    """
+    # First confirm the search panel is up by looking for the
+    # "SEARCH" header text white-pixels at a known location.
+    header_band = bgr[1500:1580, 350:750]
+    if header_band.size == 0:
+        return None
+    hsv_h = cv2.cvtColor(header_band, cv2.COLOR_BGR2HSV)
+    hdr_blue = cv2.inRange(hsv_h, np.array([85, 50, 130]), np.array([110, 255, 255]))
+    if (hdr_blue > 0).mean() < 0.04:
+        return None
+
+    # Find the slider thumb — a small oval shape on the slider track
+    # at y ≈ 1985. Detect by white-pixel mass in narrow rows.
+    track = bgr[1965:2010, 90:1040]
+    if track.size == 0:
+        return None
+    gray = cv2.cvtColor(track, cv2.COLOR_BGR2GRAY)
+    # Thumb is bright white; find the brightest column band
+    col_brightness = gray.mean(axis=0)
+    # Smooth a bit
+    if col_brightness.size < 30:
+        return None
+    smooth = np.convolve(col_brightness, np.ones(20) / 20, mode="same")
+    thumb_x = int(np.argmax(smooth))
+    track_width = track.shape[1]
+    # Thumb position fraction
+    frac = thumb_x / max(1, track_width - 1)
+    # We don't know whether it's Furnace (1-7) or Monster (1-40) just
+    # from this — caller decides. Return the fraction-rounded position
+    # assuming Furnace 1-7.
+    lv = int(round(frac * 6)) + 1
+    return max(1, min(7, lv))

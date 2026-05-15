@@ -238,6 +238,31 @@ city view is actually usable.
   cron, return to Termux).
 - 10 cycles, 0 aborts, ~+1.45M iron.
 
+## Scripts (added 2026-05-09)
+
+The procedure above is now mostly mechanised. Three scripts compose the
+flow; each is image-recognition driven (validated against fixtures in
+`tests/pnc/fixtures/`) — none rely on blind tap timing alone.
+
+| Script | Purpose | Exit codes |
+|---|---|---|
+| `scripts/pnc_popup_dismiss.py` | Walk the launch-popup chain (Connection / Mythic Hero / Curio / Alliance Duel / Battery Saver). Loops until two consecutive clean snaps. | 0 = clean, 1 = unrecognised popup persisted |
+| `scripts/pnc_iron_gather.py` | One iron-gather cycle. Ensures world view, reads troop count, opens search, snap-verifies the slider on Lv5 (nudge-with-buttons if not), runs the 4-tap send sequence per free slot. | 0 = ≥1 march sent, 1 = 5/5 already, 2 = abandoned, 3 = setup error |
+| `scripts/pnc_sapphire.py` | Sapphire-mine cycle: enter Lv8, recall stale gather, classify visible tiles, pillage skull-no-horns if attempts available else gather an empty mine. | 0 = march sent, 1 = nothing to do, 2 = abandoned, 3 = setup error |
+
+Cron-cadence helper at `src/pnc/cadence.py` (`next_recheck(troops)`)
+codifies the schedule heuristic below — pass the result straight to
+CronCreate. Tests for all of the above are in `tests/pnc/`.
+
+Run tests with:
+
+```bash
+python3 tests/pnc/test_state.py     # vision library
+python3 tests/pnc/test_iron.py      # iron-gather decision logic
+python3 tests/pnc/test_sapphire.py  # sapphire target selection
+python3 tests/pnc/test_cadence.py   # cron-cadence scheduler
+```
+
 ## Reference: announce-before-act + return-to-Termux
 
 Both are mandatory per the existing playbook:
