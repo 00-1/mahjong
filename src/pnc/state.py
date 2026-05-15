@@ -466,23 +466,33 @@ def read_sapphire_sidepanel(bgr: np.ndarray) -> SapphireSidePanel:
     if not icon_blobs:
         return SapphireSidePanel(state="absent")
 
-    # Take the topmost crystal icon — that's the sapphire row
+    # Take the topmost crystal icon — that's the sapphire row.
     icon_blobs.sort(key=lambda c: cv2.boundingRect(c)[1])
     x, y, w, h = cv2.boundingRect(icon_blobs[0])
-    # Look just below the icon for the label text
     label_y0 = 400 + y + h
-    label_y1 = min(bgr.shape[0], label_y0 + 80)
-    label = bgr[label_y0:label_y1, x:x + 180]
-    # We can't OCR yet; instead detect "IDLE" vs timer by checking
-    # whether the second line of the label is a HH:MM:SS pattern
-    # (has more bright pixels distributed regularly). IDLE is shorter.
-    # Fallback heuristic: rough character density.
-    gray = cv2.cvtColor(label, cv2.COLOR_BGR2GRAY)
-    bright_ratio = (gray > 180).mean()
-    # IDLE → ~3-4 bright chars, timer → ~7-9 bright digits + colons
-    if bright_ratio > 0.10:
+    # Bottom line of the 2-line label is "IDLE" (4 chars) when idle
+    # or "HH:MM:SS" (~8 chars) when actively gathering. Count
+    # glyph-sized connected components in the LEFT half of that line
+    # (x < 100 in the label crop) to dodge background noise from the
+    # building behind the panel.
+    bot = bgr[label_y0 + 40: label_y0 + 80, x: x + 100]
+    if bot.size == 0:
+        return SapphireSidePanel(state="absent")
+    gray = cv2.cvtColor(bot, cv2.COLOR_BGR2GRAY)
+    _, bw = cv2.threshold(gray, 180, 255, cv2.THRESH_BINARY)
+    n_lbl, _, stats, _ = cv2.connectedComponentsWithStats(bw)
+    glyph_count = 0
+    for i in range(1, n_lbl):
+        w_, h_, a_ = stats[i, 2], stats[i, 3], stats[i, 4]
+        if 3 <= w_ <= 25 and 5 <= h_ <= 35 and 12 <= a_ <= 400:
+            glyph_count += 1
+    # IDLE: ~4 glyphs (I D L E). Timer: ~7+ (digits + colon dots).
+    # Threshold at 5 leaves headroom either way.
+    if glyph_count >= 5:
         return SapphireSidePanel(state="active", timer_seconds=None)
-    return SapphireSidePanel(state="idle")
+    if glyph_count >= 2:
+        return SapphireSidePanel(state="idle")
+    return SapphireSidePanel(state="absent")
 
 
 __all__ = [

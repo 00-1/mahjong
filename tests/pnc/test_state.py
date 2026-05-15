@@ -160,6 +160,16 @@ def test_sapphire_active_in_city_view():
         f"expected sapphire active, got {panel.state}"
 
 
+def test_sapphire_idle_in_city_view():
+    """The 2026-05-15 idle fixture shows 'Sapphire Mine / IDLE' — the
+    reader must classify as idle, not misread 'IDLE' bright pixels
+    as an active timer (earlier brightness-ratio heuristic did)."""
+    bgr = load("city_sapphire_idle_2026-05-15.png")
+    panel = read_sapphire_sidepanel(bgr)
+    assert panel.state == "idle", \
+        f"expected idle, got {panel.state}"
+
+
 def test_idle_side_panel_state_is_known():
     """Smoke test the side-panel reader against the saved IDLE crop.
     The crop fixture isn't full-screen so we just verify the function
@@ -188,6 +198,7 @@ def _run_all():
         test_troop_count_5of5,
         test_troop_count_returns_none_on_city,
         test_sapphire_active_in_city_view,
+        test_sapphire_idle_in_city_view,
         test_idle_side_panel_state_is_known,
     ]
     failures = []
