@@ -64,12 +64,37 @@ def test_recall_button_absent_after_depart_before_landing():
         "false-positive recall: in-transit shouldn't show recall button"
 
 
+def test_section1_all_horned_no_pillage_target():
+    """The live-run section 1 fixture has 9 horned skulls and zero
+    skull_no_horns — selector must return None so the script knows
+    to page forward."""
+    bgr = cv2.imread(str(FIXTURES / "lv8_grid_all_horned_section1.png"))
+    tiles = find_mine_tiles(bgr)
+    target = select_target(tiles, pillage_available=True)
+    assert target is None, \
+        f"section 1 should have no pillage target, got {target}"
+
+
+def test_section2_has_pillageable_skull_no_horns():
+    """The live-run section 2 fixture has one skull_no_horns at
+    (799, 1713) — the target the user actually pillaged on 2026-05-15."""
+    bgr = cv2.imread(str(FIXTURES / "lv8_grid_section2_has_skull.png"))
+    tiles = find_mine_tiles(bgr)
+    target = select_target(tiles, pillage_available=True)
+    assert target is not None, "section 2 should have a pillage target"
+    assert target.flag == "skull_no_horns"
+    assert 750 <= target.cx <= 850 and 1670 <= target.cy <= 1760, \
+        f"target coords off: ({target.cx}, {target.cy})"
+
+
 def _run_all():
     tests = [
         test_pillage_target_picked_when_attempts_available,
         test_empty_target_picked_when_no_pillage,
         test_horned_skulls_never_targeted,
         test_recall_button_absent_after_depart_before_landing,
+        test_section1_all_horned_no_pillage_target,
+        test_section2_has_pillageable_skull_no_horns,
     ]
     failures = []
     for t in tests:

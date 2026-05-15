@@ -51,6 +51,9 @@ TAP_RECALL_BUTTON = (95, 670)             # only visible when a march is out
 TAP_PILLAGE_BUTTON = (772, 1689)          # right yellow on Mine Info popup
 TAP_LOADOUT_I = (575, 275)                # main-march loadout (top-row "I")
 TAP_DEPART = (540, 2295)                  # bottom Depart button
+TAP_NEXT_SECTION = (715, 1965)            # > arrow on the page navigator
+TAP_PREV_SECTION = (370, 1966)            # < arrow on the page navigator
+MAX_SECTIONS_TO_SCAN = 4                  # how many pages forward to try
 TAP_WORLD_TO_TERMUX = None                # we won't switch — caller handles
 
 
@@ -171,14 +174,10 @@ def main() -> int:
         bgr = snap(tmp)
         emit("recalled")
 
-    # Step 5: classify visible tiles, pick a target.
-    tiles = find_mine_tiles(bgr)
-    by_flag = {}
-    for t in tiles:
-        by_flag.setdefault(t.flag, []).append(t)
-    emit("tiles_found", count=len(tiles),
-         by_flag={k: len(v) for k, v in by_flag.items()})
-
+    # Step 5: classify visible tiles, pick a target. If the current
+    # section has no usable target, page forward up to
+    # MAX_SECTIONS_TO_SCAN times. The live 2026-05-15 run found page 1
+    # was all-horned and page 2 had the skull-no-horns.
     if args.assume_pillage_attempts is not None:
         pillage_attempts = args.assume_pillage_attempts
     else:
@@ -186,10 +185,36 @@ def main() -> int:
         # pillage attempts. If the target tap fails on Pillage button
         # (no Mine Info popup), fall back to empty mine.
         pillage_attempts = 4
-    target = select_target(tiles, pillage_available=pillage_attempts > 0)
+
+    target = None
+    sections_scanned = 0
+    while sections_scanned < MAX_SECTIONS_TO_SCAN:
+        tiles = find_mine_tiles(bgr)
+        by_flag = {}
+        for t in tiles:
+            by_flag.setdefault(t.flag, []).append(t)
+        emit("tiles_found", section=sections_scanned + 1,
+             count=len(tiles),
+             by_flag={k: len(v) for k, v in by_flag.items()})
+
+        target = select_target(tiles, pillage_available=pillage_attempts > 0)
+        if target is not None:
+            break
+
+        sections_scanned += 1
+        if sections_scanned >= MAX_SECTIONS_TO_SCAN or args.dry_run:
+            break
+        emit("paging_next_section", to_section=sections_scanned + 1)
+        tap(*TAP_NEXT_SECTION)
+        time.sleep(3)
+        bgr = snap(tmp)
+        if bgr is None:
+            emit("snap_failed", phase="paging")
+            return 3
 
     if target is None:
-        emit("no_target", reason="all visible tiles are horned/unknown")
+        emit("no_target",
+             reason=f"no usable tile across {sections_scanned} sections")
         return 1
 
     emit("target_selected",
