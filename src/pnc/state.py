@@ -347,33 +347,42 @@ def _classify_flag(bgr: np.ndarray, deposit_cx: int, deposit_cy: int) -> tuple[s
 
 
 def _read_percent_bar(bgr: np.ndarray, deposit_cx: int, deposit_cy: int) -> Optional[int]:
-    """Read the percent text below a deposit, if present.
-    Returns int 0-100, or None if no bar visible.
-    For now this is a simple "is there a green bar near this tile"
-    detector — actual digit OCR can come later when needed.
+    """Read the green progress-bar fill ratio below a deposit, if any.
+
+    Returns int 0-100 estimated from green-bar span / total-bar-width,
+    or None if no bar visible. Calibrated 2026-05-09 against the
+    sapphire_lv8_mine_after_depart fixture (known 28/72/74 %): the
+    bar sits ~50 px below the deposit centre and a full bar spans
+    roughly 226 px. The 28%-known tile reads as 30% with these
+    constants — within tolerance for the gameplay decision (we just
+    want low-vs-high to pick a pillage target).
     """
-    # Look below the deposit for a green progress-bar strip
-    y0 = min(bgr.shape[0], deposit_cy + 100)
-    y1 = min(bgr.shape[0], deposit_cy + 200)
-    x0 = max(0, deposit_cx - 150)
-    x1 = min(bgr.shape[1], deposit_cx + 150)
+    # The strip is below the deposit at dy ≈ +75..+100 (calibrated
+    # against fixture 2026-05-09). Earlier probe at +30..+90 hit
+    # noise and missed the real bar.
+    y0 = min(bgr.shape[0], deposit_cy + 60)
+    y1 = min(bgr.shape[0], deposit_cy + 110)
+    x0 = max(0, deposit_cx - 120)
+    x1 = min(bgr.shape[1], deposit_cx + 120)
     roi = bgr[y0:y1, x0:x1]
     if roi.size == 0:
         return None
     hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
     green = cv2.inRange(hsv, np.array([35, 100, 100]), np.array([85, 255, 255]))
-    if (green > 0).mean() < 0.02:
+    if (green > 0).mean() < 0.04:
         return None
-    # The green strip's length vs total bar width approximates the percent.
-    # The bar is roughly 250px wide on 1080x2400. Find the rightmost
-    # green column.
-    col_has_green = green.any(axis=0)
-    green_cols = np.where(col_has_green)[0]
-    if green_cols.size == 0:
+    # Pick the densest single green-row band — protects against
+    # stray green specks (isometric tile shading) elsewhere in the ROI.
+    row_green = (green > 0).sum(axis=1)
+    if row_green.max() < 30:
         return None
-    leftmost, rightmost = green_cols[0], green_cols[-1]
-    bar_width = rightmost - leftmost + 1
-    total_bar = 250  # approximate full-bar pixel width
+    best_row = int(np.argmax(row_green))
+    band = green[max(0, best_row - 2): best_row + 3]
+    cols = np.where(band.any(axis=0))[0]
+    if cols.size == 0:
+        return None
+    bar_width = int(cols[-1] - cols[0] + 1)
+    total_bar = 226   # calibrated from the 72% / 74% reference tiles
     pct = int(round(100 * bar_width / total_bar))
     return min(100, max(0, pct))
 

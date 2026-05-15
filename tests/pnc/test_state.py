@@ -70,12 +70,25 @@ def test_lv8_mine_grid_after_depart_detects_skull_no_horns():
 
 
 def test_lv8_mine_grid_percent_reads_are_plausible():
+    """The fixture has known reads: 28% (skull_no_horns), 74% & 72%
+    (the two horned skulls). All three flagged tiles must have a
+    percent reading, and each must fall within 5pp of the known value."""
     bgr = load("sapphire_lv8_mine_after_depart.png")
     tiles = find_mine_tiles(bgr)
-    # Tiles with flags should have percent readings (they have green bars)
-    flagged = [t for t in tiles if t.flag != "empty" and t.percent is not None]
-    for t in flagged:
-        assert 0 <= t.percent <= 100, f"impossible percent {t.percent}"
+    flagged = [t for t in tiles if t.flag in ("skull_no_horns", "horned_skull")]
+    assert all(t.percent is not None for t in flagged), \
+        f"some flagged tiles have no percent: {[(t.flag, t.percent) for t in flagged]}"
+
+    # The skull_no_horns is the 28% target.
+    snh = [t for t in flagged if t.flag == "skull_no_horns"]
+    assert len(snh) == 1
+    assert abs(snh[0].percent - 28) <= 5, f"expected ~28%, got {snh[0].percent}"
+
+    # The two horned reads are 72% and 74%; require both within 5pp.
+    horned = sorted([t.percent for t in flagged if t.flag == "horned_skull"])
+    assert len(horned) == 2
+    assert abs(horned[0] - 72) <= 5, f"low horned should be ~72%, got {horned[0]}"
+    assert abs(horned[1] - 74) <= 5, f"high horned should be ~74%, got {horned[1]}"
 
 
 # ---------- popup detection ----------

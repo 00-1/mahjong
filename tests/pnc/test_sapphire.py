@@ -23,6 +23,7 @@ _spec = importlib.util.spec_from_file_location(
 _mod = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(_mod)
 select_target = _mod.select_target
+detect_recall_button = _mod.detect_recall_button
 
 FIXTURES = Path(__file__).parent / "fixtures"
 
@@ -54,11 +55,21 @@ def test_horned_skulls_never_targeted():
             f"with pillage={pa} got horned_skull target"
 
 
+def test_recall_button_absent_after_depart_before_landing():
+    """The 'after_depart' fixture was captured immediately after the
+    Depart button was tapped — the march is still in transit, hasn't
+    landed on the mine yet, so no Recall button is rendered."""
+    bgr = cv2.imread(str(FIXTURES / "sapphire_lv8_mine_after_depart.png"))
+    assert detect_recall_button(bgr) is False, \
+        "false-positive recall: in-transit shouldn't show recall button"
+
+
 def _run_all():
     tests = [
         test_pillage_target_picked_when_attempts_available,
         test_empty_target_picked_when_no_pillage,
         test_horned_skulls_never_targeted,
+        test_recall_button_absent_after_depart_before_landing,
     ]
     failures = []
     for t in tests:
