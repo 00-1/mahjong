@@ -41,20 +41,29 @@ from src.pnc.state import (
 )
 
 
-# Calibrated taps (1080×2400). All confirmed during the 2026-05-15
-# successful pillage flow.
+# Calibrated taps (1080×2400). Updated 2026-05-15 from live pillage
+# step-by-step walkthrough — see SAPPHIRE_MINE.md for source fixtures.
 TAP_SAPPHIRE_SIDEPANEL = (80, 930)
 TAP_LV8_ENTER = (905, 1870)
-TAP_GENERIC_CONFIRM_RIGHT = (780, 1434)   # CONFIRM (right yellow) on 2-button modals
-TAP_PICKAXE_DONT_ASK = (330, 1245)
-TAP_CONTINUOUSLY_OCCUPY = (294, 1434)     # left CTA on the pickaxe modal
+TAP_GENERIC_CONFIRM_RIGHT = (780, 1434)   # right yellow on 2-button "You can gather Sapphire" modal (first entry only)
+# Pickaxe Tip modal (2-button "Continuously Occupy / View"):
+TAP_PICKAXE_DONT_ASK = (358, 1305)        # was (330, 1245) — missed the checkbox
+TAP_CONTINUOUSLY_OCCUPY = (310, 1462)     # was (294, 1434) — landed too high
+# Unprotected-pit Tip modal (1-button CONFIRM, shown after Pillage):
+TAP_UNPROTECTED_DONT_ASK = (210, 1310)
+TAP_UNPROTECTED_CONFIRM = (540, 1450)     # centred yellow CONFIRM
 TAP_RECALL_BUTTON = (95, 670)             # only visible when a march is out
 TAP_PILLAGE_BUTTON = (772, 1689)          # right yellow on Mine Info popup
 TAP_LOADOUT_I = (575, 275)                # main-march loadout (top-row "I")
 TAP_DEPART = (540, 2295)                  # bottom Depart button
-TAP_NEXT_SECTION = (715, 1965)            # > arrow on the page navigator
-TAP_PREV_SECTION = (370, 1966)            # < arrow on the page navigator
-MAX_SECTIONS_TO_SCAN = 4                  # how many pages forward to try
+TAP_NEXT_SECTION = (745, 2080)            # > arrow on page navigator (was 715,1965)
+TAP_PREV_SECTION = (330, 2080)            # < arrow on page navigator
+TAP_PAGE_NUMBER_INPUT = (540, 2080)       # the "N Section" text — tap to open numpad
+# Strategy: early sections (1..1113) are nearly always full of
+# horned-skull (alliance / strong-realm) tiles per user notes. Jump
+# to a deep page first, then forward-scan from there.
+START_SECTION = 1114
+MAX_SECTIONS_TO_SCAN = 6                  # how many pages forward to try from START_SECTION
 TAP_WORLD_TO_TERMUX = None                # we won't switch — caller handles
 
 
@@ -101,6 +110,41 @@ def detect_recall_button(bgr) -> bool:
     return bool((red > 0).mean() > 0.20)
 
 
+def jump_to_section(page_n: int, tmp: Path) -> bool:
+    """Open the page-number numpad, key in `page_n`, submit. Returns
+    True if we believe the jump landed (re-snapped and the grid view
+    is still visible, which we approximate via 'not popup, not dark').
+
+    The numpad submit-button coord isn't yet pinned (the user noted
+    "OK button location TBD"). We use `adb input text` for the digits
+    and the IME Enter keyevent to submit, which works on most PNC
+    numpad layouts that accept hardware-keyboard input. If this proves
+    unreliable on a fresh device, switch to tapping per-digit at
+    fixture-derived coords.
+    """
+    tap(*TAP_PAGE_NUMBER_INPUT)
+    time.sleep(2)
+    # Clear any existing digits, then type the new number.
+    adb("input", "keyevent", "67")   # backspace x4 just in case
+    adb("input", "keyevent", "67")
+    adb("input", "keyevent", "67")
+    adb("input", "keyevent", "67")
+    adb("input", "text", str(page_n))
+    time.sleep(1)
+    # Submit via IME Enter (keycode 66). If numpad doesn't bind to
+    # this, the snap below will reveal we're still in the numpad and
+    # a follow-up tap-OK will be needed.
+    adb("input", "keyevent", "66")
+    time.sleep(3)
+    bgr = snap(tmp)
+    if bgr is None:
+        return False
+    # The grid view header has "Lv.8 Mine" + sapphire counter; the
+    # crudest "we're on the grid" check is: no popup detected and
+    # find_mine_tiles returns ≥1 tile.
+    return detect_popup(bgr) is None and len(find_mine_tiles(bgr)) >= 1
+
+
 def select_target(tiles: list[MineTile], pillage_available: bool) -> MineTile | None:
     """Pick a mine to send to. Returns None if nothing valid on screen.
 
@@ -133,6 +177,11 @@ def main() -> int:
                    help="Read state and print plan; no taps")
     p.add_argument("--assume-pillage-attempts", type=int, default=None,
                    help="Override pillage-counter detection. Set when the OCR for the header isn't ready yet — pass 4 to act as if we have attempts, 0 to force empty-mine targeting.")
+    p.add_argument("--start-section", type=int, default=START_SECTION,
+                   help=f"Section number to jump to before scanning (default {START_SECTION}). "
+                        "Early pages (1..1113) are mostly horned-skull; jumping deep avoids wasted scans.")
+    p.add_argument("--no-page-jump", action="store_true",
+                   help="Skip the section jump and scan from the page already shown.")
     args = p.parse_args()
     args.shot_dir.mkdir(parents=True, exist_ok=True)
     tmp = args.shot_dir / "sapphire_check.png"
@@ -142,15 +191,38 @@ def main() -> int:
         tap(*TAP_SAPPHIRE_SIDEPANEL)
         time.sleep(5)
 
-    # Step 2: tap Lv.8 Enter, dismiss CONFIRM + pickaxe modal.
+    # Step 2: tap Lv.8 Enter, dismiss whichever Tip modal appears.
+    #
+    # The flow on first-ever-entry is:
+    #   Lv8 Enter → "You can gather Sapphire after teleporting" CONFIRM
+    #   → Pickaxe Tip ("Continuously Occupy" / "View") → mine grid.
+    # On subsequent entries the "You can gather Sapphire" CONFIRM is
+    # skipped and we land directly on the Pickaxe Tip. The 2026-05-15
+    # live run hit exactly this path. The previous version tapped the
+    # CONFIRM coord (780, 1434) unconditionally, which landed on the
+    # Pickaxe-Tip "View" button and dumped us into the Golden Dwarf
+    # purchase page.
+    #
+    # We snap-and-detect after Lv.8 Enter rather than tapping blindly.
+    # If the CONFIRM modal IS up, dismiss it first, then re-snap and
+    # dismiss the Pickaxe Tip.
     if not args.dry_run:
         tap(*TAP_LV8_ENTER)
         time.sleep(5)
-        # CONFIRM modal only appears the first time (when no active gather)
-        # Tap it; harmless if absent.
-        tap(*TAP_GENERIC_CONFIRM_RIGHT)
-        time.sleep(4)
-        # Pickaxe promo: check Don't ask, then Continuously Occupy
+        bgr = snap(tmp)
+        # Heuristic: if there's a generic CONFIRM-style 2-button modal
+        # (right-side yellow), the right CTA is the safe tap. detect_popup
+        # picks this up as `generic_tip_confirm`.
+        if bgr is not None:
+            popup = detect_popup(bgr)
+            if popup is not None and popup.name == "generic_tip_confirm":
+                cx, cy = popup.confirm_xy or popup.close_xy
+                emit("first_entry_confirm", xy=[cx, cy])
+                tap(cx, cy)
+                time.sleep(4)
+        # Pickaxe Tip is now (or was already) up. Check Don't-ask then
+        # Continuously Occupy. Both coords land harmlessly on the
+        # mine-grid background if the Tip isn't actually present.
         tap(*TAP_PICKAXE_DONT_ASK)
         time.sleep(1)
         tap(*TAP_CONTINUOUSLY_OCCUPY)
@@ -175,10 +247,25 @@ def main() -> int:
         bgr = snap(tmp)
         emit("recalled")
 
+    # Step 4.5: jump to a deep section before scanning. User reports
+    # sections 1..~1113 are filled with horned-skull tiles (alliance
+    # / strong-realm) — pillagable skull-no-horns tiles cluster much
+    # later. Jumping to START_SECTION and then forward-scanning is
+    # dramatically faster than walking pages from 1.
+    if not args.dry_run and not args.no_page_jump:
+        emit("page_jump", to=args.start_section)
+        if not jump_to_section(args.start_section, tmp):
+            emit("page_jump_uncertain",
+                 note="re-snap didn't confirm grid view; continuing anyway "
+                      "— scan loop will still find tiles if we did land")
+        bgr = snap(tmp)
+        if bgr is None:
+            emit("snap_failed", phase="post_page_jump")
+            return 3
+
     # Step 5: classify visible tiles, pick a target. If the current
     # section has no usable target, page forward up to
-    # MAX_SECTIONS_TO_SCAN times. The live 2026-05-15 run found page 1
-    # was all-horned and page 2 had the skull-no-horns.
+    # MAX_SECTIONS_TO_SCAN times.
     if args.assume_pillage_attempts is not None:
         pillage_attempts = args.assume_pillage_attempts
     else:
@@ -240,12 +327,16 @@ def main() -> int:
     if target.flag == "skull_no_horns":
         tap(*TAP_PILLAGE_BUTTON)
         time.sleep(3)
-        # "Unprotected pit" warning — Don't ask + CONFIRM (centred yellow)
-        tap(330, 1245)         # Don't ask
+        # "Unprotected pit. Unable to reset when gathering." — Don't ask
+        # (left-aligned checkbox at 210,1310) then centred CONFIRM.
+        tap(*TAP_UNPROTECTED_DONT_ASK)
         time.sleep(1)
-        tap(540, 1434)         # CONFIRM (centred since it's a 1-button)
+        tap(*TAP_UNPROTECTED_CONFIRM)
         time.sleep(4)
-        # Pickaxe promo again
+        # In some flows a Pickaxe-Tip modal re-appears after CONFIRM
+        # (the +20% Gather Speed promo). Tap Don't-ask + Continuously
+        # Occupy idempotently — if the modal isn't present these taps
+        # just land on the underlying mine grid harmlessly.
         tap(*TAP_PICKAXE_DONT_ASK)
         time.sleep(1)
         tap(*TAP_CONTINUOUSLY_OCCUPY)

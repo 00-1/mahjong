@@ -25,13 +25,25 @@ When to act:
 
 ## Calibrated taps (1080×2400)
 
+Updated 2026-05-15 from step-by-step live run with fixtures captured at
+each modal — fixtures committed under `tests/pnc/fixtures/` and
+referenced by `tests/pnc/test_sapphire.py::test_calibrated_taps_match_*`.
+
 | Element | (x, y) | Notes |
 |---|---|---|
 | Sapphire Mine icon (city side panel) | (80, 930) | Position depends on what's above; verify with side-panel crop y=400..1200, x=0..200 |
-| Lv.8 Mine "Enter" button | (905, 1870) | Yellow CTA on Lv.8 row of the mine list. Lv2 (top) → Lv8 (bottom), each labeled with Output K/hr |
-| CONFIRM on Lv.8-entry modal | (780, 1434) | "You can gather Sapphire after teleporting…" — yellow on right |
-| "Continuously Occupy" on Pickaxe-promo | (294, 1434) | The OTHER button "View" opens the buy-pickaxe shop — don't tap |
-| Page-number jump (Lv.8 mine view) | tap (490, 2080) on the "1" between `< _ Section >` to open the numpad input | Then key in the page number (e.g. 1114) and submit |
+| Lv.8 Mine "Enter" button | (905, 1870) | Yellow CTA on Lv.8 row of the mine list. Lv.2 (top) → Lv.8 (bottom), each labeled with Output K/hr. Header reads "Sapphire Mine" + balance + "Inactive +20%" / Redeem |
+| CONFIRM on first-entry modal | (780, 1434) | "You can gather Sapphire after teleporting…" — yellow on right. **Only fires on first-ever entry per session;** subsequent entries skip straight to the Pickaxe Tip. The script snap-and-detects this rather than tapping blind |
+| Pickaxe Tip "Don't ask again today" checkbox | (358, 1305) | Was (330, 1245) — missed the checkbox |
+| Pickaxe Tip "Continuously Occupy" (left button) | (310, 1462) | Was (294, 1434) — landed too high; the OTHER yellow button "View" opens the Golden Dwarf Pickaxe purchase page (do NOT tap that) |
+| Mine Info popup "Pillage" (right yellow) | (772, 1689) | Opens after tapping a skull-no-horns tile. Left "View Info" button is grey, do not tap |
+| "Unprotected pit" Don't-ask checkbox | (210, 1310) | Different layout from the Pickaxe Tip — checkbox is on the LEFT, not center |
+| "Unprotected pit" CONFIRM (centred yellow) | (540, 1450) | One-button modal; centre CTA, not right-side |
+| Depart-dialog "I" loadout (main march) | (575, 275) | Top-row "I" / "II" / "III" / "IV" loadout slots — tap I for main-march troops (whichever loadout slot the user saved as main). Tapping Select All instead would pick weak defaults |
+| Depart-dialog Depart button | (540, 2295) | Yellow CTA at very bottom. Same coord works for Select All (which becomes Depart after the loadout fills) |
+| Page-navigator < arrow | (330, 2080) | Bottom of mine grid: `< N Section >` |
+| Page-navigator > arrow | (745, 2080) | |
+| Page-number numpad input | (540, 2080) | Tap the "N Section" text to open a numpad. Then `adb input text 1114; adb input keyevent 66` (Enter). OK-button coord still TBD if Enter doesn't bind |
 
 ## Flow (recall + send)
 
@@ -48,13 +60,20 @@ When to act:
      friendly skull or alliance flag, which is not pillagable).
    - Pillage Attempts **== 0** → target an **empty mine** (no flag
      of any kind on the tile).
-4. **Find the target tile.** Page 1 is shown by default. If no
-   suitable tile is visible:
-   - Tap the page number "1" at (490, 2080) — opens a numpad input.
-   - Type a deeper page number (user's example was `1114`) and
-     submit. (OK-button position is unconfirmed — needs cv2 mask
-     verification next attempt.)
-   - Or use the `<` `>` arrows for fine navigation.
+4. **Find the target tile.** Page 1 is shown by default.
+   - **Pages 1..~1113 are nearly always filled with horned-skull
+     tiles** (alliance / strong-realm players we won't pillage).
+     User said: "many many early pages are filled with horns" (2026-05-15).
+   - **Jump to page 1114 first**, then forward-scan with `>` if no
+     skull-no-horns visible:
+     1. Tap the page-number text at **(540, 2080)** → numpad opens
+     2. `adb input text 1114; adb input keyevent 66` (Enter)
+     3. If Enter doesn't dismiss the numpad on a fresh device, fall
+        back to tapping the OK button (coord TBD — capture fixture
+        next time the numpad is visible)
+   - `pnc_sapphire.py` does this automatically with the
+     `START_SECTION = 1114` constant; override with `--start-section N`
+     or skip with `--no-page-jump`.
 5. **Tap the target tile.** Opens the Depart dialog.
 6. **Select the main march, NOT "Select All"**. There's a numbered
    button "1" near the **top center** of the Depart dialog — that's
@@ -81,17 +100,58 @@ Sapphire uses a **separate troop slot** from iron. Iron Troop Info
 in the world-map header still shows 5/5 even when sapphire is out.
 Confirmed.
 
+## Pillage success verification
+
+User confirmed (2026-05-15): "you just look to see if there's an
+**active gather (above the recall button)**". The check is:
+
+1. Wait for the march to land (after a pillage, this includes a
+   battle animation — see "Battle skip" below).
+2. Snap the Lv.8 mine grid.
+3. Find the red Recall button on the left side (`detect_recall_button`).
+4. **Look just above the recall button for an "active gather"
+   indicator** — visual signature TBD; fixture needed.
+
+If the indicator is present → pillage succeeded, troops are gathering.
+If absent → likely defeated or rerouted; try another mine.
+
+The mail/report path is **not** used for verification — we just read
+the mine-grid state directly.
+
+## Battle skip
+
+Pillage marches trigger a battle animation before the troops land on
+the mine. Currently the animation plays out (~30+ seconds) and the
+script hits the SKIP chevron at the bottom-right via
+`detect_battle_skip`. User asked us to "find button to fix battle
+animation" — there's likely a settings toggle to auto-skip combat
+animations. Capture next time we're in a fight; candidates:
+
+- In-battle screen has a gear icon in the top-right.
+- Account Settings → Game → "Skip battle animations" toggle.
+- Or a per-march "auto skip" checkbox on the Depart dialog.
+
+Once the toggle is wired ON, the battle-animation skip taps become
+unnecessary.
+
 ## Open questions for next attempt
 
-- Recall button location and confirmation prompt.
-- Main-march "1" button precise coords on the Depart dialog.
-- OK button location on the page-number numpad input.
-- Pillage Attempts counter coords (header crop) so we can read it
-  programmatically.
+- Active-gather indicator visual (above recall button) — capture
+  fixture after a confirmed-successful pillage lands.
+- Battle-skip global toggle location.
+- OK button on the page-number numpad — verify Enter (keyevent 66)
+  works; if not, capture numpad fixture and pin the OK coord.
+- Recall confirmation prompt (after tapping Recall, does a
+  "Recall march?" dialog appear? coord for its CONFIRM is unknown).
+- Pillage Attempts counter — current detector
+  (`read_pillage_attempts_available`) is presence-only; doesn't
+  distinguish 0 vs N>0. Needs a Pillage-Attempts:0 fixture to extend.
 - What does the side-panel "Sapphire Mine IDLE" mean *while* the
-  Excavation Time on Lv.8 mine is still > 0? My theory: IDLE means
-  no march is currently out — but the Lv.8 mine has an internal
-  Excavation Time independent of personal marches. Needs verification.
+  Lv.8 mine's own Excavation Time is still > 0? Theory: IDLE means
+  no personal march is out; the mine's Excavation Time is a global
+  reservoir, not a personal timer. Confirmed by 2026-05-15 walkthrough
+  (we entered while IDLE, saw Excavation Time 1d 14:08:24, sent a
+  march, returned to a personal timer in the side panel).
 
 ## Scripts (status as of 2026-05-09)
 

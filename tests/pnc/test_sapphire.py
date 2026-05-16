@@ -75,6 +75,25 @@ def test_section1_all_horned_no_pillage_target():
         f"section 1 should have no pillage target, got {target}"
 
 
+def test_calibrated_taps_match_2026_05_15_live_run():
+    """Lock the coords pulled from the step-by-step pillage walkthrough.
+    If a future edit moves any of these, the live flow will silently
+    miss-tap (e.g. the previous Pickaxe-Tip Don't-ask coord was wrong
+    and the CONFIRM coord landed on 'View', opening the Golden Dwarf
+    purchase page)."""
+    assert _mod.TAP_PICKAXE_DONT_ASK == (358, 1305)
+    assert _mod.TAP_CONTINUOUSLY_OCCUPY == (310, 1462)
+    assert _mod.TAP_UNPROTECTED_DONT_ASK == (210, 1310)
+    assert _mod.TAP_UNPROTECTED_CONFIRM == (540, 1450)
+    assert _mod.TAP_PILLAGE_BUTTON == (772, 1689)
+    assert _mod.TAP_LOADOUT_I == (575, 275)
+    assert _mod.TAP_DEPART == (540, 2295)
+    assert _mod.TAP_NEXT_SECTION == (745, 2080)
+    assert _mod.TAP_PREV_SECTION == (330, 2080)
+    assert _mod.TAP_PAGE_NUMBER_INPUT == (540, 2080)
+    assert _mod.START_SECTION == 1114
+
+
 def test_section2_has_pillageable_skull_no_horns():
     """The live-run section 2 fixture has one skull_no_horns at
     (799, 1713) — the target the user actually pillaged on 2026-05-15."""
@@ -95,6 +114,7 @@ def _run_all():
         test_recall_button_absent_after_depart_before_landing,
         test_section1_all_horned_no_pillage_target,
         test_section2_has_pillageable_skull_no_horns,
+        test_calibrated_taps_match_2026_05_15_live_run,
     ]
     failures = []
     for t in tests:
