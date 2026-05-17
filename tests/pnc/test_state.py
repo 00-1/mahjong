@@ -147,6 +147,16 @@ def test_troop_count_5of5():
     assert info.n_active == 5, f"expected 5 active troops, got {info.n_active}"
 
 
+def test_troop_count_5of5_cluster_2026_05_17():
+    """Five active marches, one long sapphire (teal) + four short
+    gather/marching (orange) timers. Earlier teal-only mask only saw
+    the long timer and reported 1/5; this fixture locks in the
+    teal+gold mask fix."""
+    bgr = load("world_5of5_cluster_2026-05-17.png")
+    info = read_troop_count(bgr)
+    assert info.n_active == 5, f"expected 5, got {info.n_active}"
+
+
 def test_troop_count_returns_none_on_city():
     """City view has no Troop Info panel — reader returns None."""
     city = load("city_view_clean.png")
@@ -254,6 +264,7 @@ def _run_all():
         test_detect_mythic_hero_popup,
         test_view_detection,
         test_troop_count_5of5,
+        test_troop_count_5of5_cluster_2026_05_17,
         test_troop_count_returns_none_on_city,
         test_sapphire_active_in_city_view,
         test_sapphire_idle_in_city_view,

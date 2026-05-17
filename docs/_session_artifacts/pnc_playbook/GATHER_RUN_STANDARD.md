@@ -92,6 +92,43 @@ Update prompts surface as "New version found, please install the
 latest update assets" with a CONFIRM button at (540, 1440). After
 confirm, expect ~30 s of loading splash before the city view appears.
 
+## Post-version-update / first-launch tab state (added 2026-05-17)
+
+After a PNC update, app restart, or any time the search panel hasn't
+been used recently, the panel opens on the **Monster tab at Lv.40**
+(absolute defaults). The Furnace tab is to the right of the visible
+tabs; reaching it requires the horizontal tab-row swipe.
+
+Recovery captured live 2026-05-17:
+
+```bash
+adb shell input tap 115 1950          # magnifier opens search panel
+sleep 4
+adb shell input swipe 1000 1850 100 1850 500   # scroll tabs left
+sleep 3
+adb shell input tap 940 1850          # Furnace tab
+sleep 3
+# Slider on Furnace defaults to Lv.5 directly — no nudge needed on
+# this device (verified with fixtures world_5of5_with_marching_2026-05-17).
+adb shell input tap 540 2280          # SEARCH
+```
+
+`pnc_iron_gather.py` currently assumes the panel is already on Furnace.
+Open work item: add tab detection (Monster vs Furnace) and the swipe
+sequence so the script self-heals on the post-update reset path.
+
+## search magnifier (115, 1950) is a TOGGLE — check before tapping
+
+The magnifier opens the search panel when closed, but CLOSES it when
+already open. The iron-gather script's `open_search_panel` was naively
+tapping the magnifier as the first action; if the panel was left
+open from a previous run, this closed it and the subsequent
+`read_search_panel_lv` returned `None` → abandon.
+
+Fix landed in commit (2026-05-17): snap first, return early if
+`read_search_panel_lv` already detects an open panel, only tap the
+magnifier when the panel is closed.
+
 ## DO NOT tap (540, 2280) when no search panel is up
 
 The SEARCH-button coord lies on top of the **BAG bottom-nav button**

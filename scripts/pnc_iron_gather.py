@@ -178,10 +178,14 @@ def send_one_march(tmp: Path, dry_run: bool) -> bool:
 
 
 def open_search_panel(tmp: Path, dry_run: bool) -> bool:
-    """Tap the magnifier and confirm the panel is open by checking
-    that read_search_panel_lv returns a number."""
+    """Open the search panel if not already up. The magnifier is a
+    TOGGLE — tapping it when the panel is already visible CLOSES it,
+    so we snap first and only tap if needed."""
     if dry_run:
         return True
+    bgr = snap(tmp)
+    if bgr is not None and read_search_panel_lv(bgr) is not None:
+        return True   # already open, leave it
     tap(*TAP_SEARCH_MAGNIFIER)
     time.sleep(3)
     bgr = snap(tmp)

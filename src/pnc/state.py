@@ -605,31 +605,56 @@ def read_troop_count(bgr: np.ndarray) -> TroopInfo:
     if not in_world_view(bgr):
         return TroopInfo(n_active=None)
 
-    # The Troop Info panel is in the top-left of world view at
-    # roughly x=0..420, y=240..830.
-    panel = bgr[240:830, 0:420]
-    if panel.size == 0:
-        return TroopInfo(n_active=None)
+    # The Troop Info panel has up to 5 fixed-position rows; the panel
+    # COLLAPSES vertically when fewer rows are active. Below the last
+    # active row the world map background shows through. Per-row
+    # algorithm:
+    #   1. confirm the panel still extends to row cy by checking the
+    #      LEFT edge (x≈10) is dark-navy panel-background; if it's
+    #      bright world-map, this and later rows don't exist
+    #   2. sample the row's timer-text area for teal+orange pixel mass
+    #
+    # PNC renders timer text in two colour families: TEAL (hue ~85..100)
+    # for long Gathering timers, ORANGE/GOLD (hue ~20..35) for short
+    # Returning... / Marching timers. Calibrated 2026-05-17.
+    ROW_CENTERS_Y = [345, 435, 525, 615, 705]
+    ROW_HALF_HEIGHT = 20
+    PER_ROW_MIN_PIXELS = 200
+    PANEL_BG_V_MAX = 100      # panel background V is ~50..70; world map > 110
 
-    # Each row has a tealish-cyan timer text and a row separator.
-    # Detect rows via the timer-text colour band.
-    hsv = cv2.cvtColor(panel, cv2.COLOR_BGR2HSV)
-    # Tealish: hue ~70-100, mid-high sat
-    teal = cv2.inRange(hsv, np.array([70, 60, 120]), np.array([100, 255, 255]))
-    # Sum per row
-    row_signal = teal.sum(axis=1)
-    # Find local peaks above a threshold
-    threshold = max(row_signal.max() * 0.15, 200)
-    in_row = row_signal > threshold
-    # Count contiguous true regions
+    hsv = cv2.cvtColor(bgr, cv2.COLOR_BGR2HSV)
+    # Narrow ranges with high V — real timer text is bright (V > 190)
+    # whereas world-map oranges (banners, dirt) are darker (V < 170).
+    teal = cv2.inRange(hsv, np.array([85, 60, 190]), np.array([105, 255, 255]))
+    gold = cv2.inRange(hsv, np.array([18, 50, 190]), np.array([32, 200, 255]))
+    timer_mask = cv2.bitwise_or(teal, gold)
+
     n_rows = 0
-    i = 0
-    while i < len(in_row):
-        if in_row[i]:
+    for i, cy in enumerate(ROW_CENTERS_Y):
+        # Step 1: for rows 2..5, confirm the panel still extends here.
+        # The empty middle column (x=250..320) is dark navy (V<100)
+        # when the panel is present and bright (V>110) when the world
+        # map shows through. Row 1's middle has the row-separator
+        # gradient and reads bright in BOTH cases, so we skip the
+        # check for row 1 — its timer mass alone tells us whether
+        # row 1 is active.
+        if i > 0:
+            middle_strip = bgr[cy - 15: cy + 15, 250:320]
+            if middle_strip.size == 0:
+                break
+            mean_v = float(cv2.cvtColor(middle_strip, cv2.COLOR_BGR2HSV)[:, :, 2].mean())
+            if mean_v > PANEL_BG_V_MAX:
+                break   # Panel ended above this row
+        # Step 2: enough timer-coloured pixels in the timer-text area?
+        # NOTE: when the panel is collapsed to ≤2 rows, the bottom
+        # edge of the panel sometimes leaks orange/gold pixels into
+        # the row 2/3 sample band even though no timer text is there.
+        # That over-counts. Tracked as a known issue — for now the
+        # caller (pnc_iron_gather) handles n_active>=N_TOTAL by
+        # bailing, which is safe even if the true count is lower.
+        band = timer_mask[cy - ROW_HALF_HEIGHT: cy + ROW_HALF_HEIGHT, 50:300]
+        if int((band > 0).sum()) >= PER_ROW_MIN_PIXELS:
             n_rows += 1
-            while i < len(in_row) and in_row[i]:
-                i += 1
-        i += 1
     if n_rows == 0:
         return TroopInfo(n_active=None)
     return TroopInfo(n_active=min(5, n_rows), n_total=5)
@@ -667,8 +692,10 @@ def read_search_panel_lv(bgr: np.ndarray) -> int | None:
     the panel isn't open.
     """
     # First confirm the search panel is up by looking for the
-    # "SEARCH" header text white-pixels at a known location.
-    header_band = bgr[1500:1580, 350:750]
+    # "SEARCH" header text — cyan/blue glow at y ≈ 1450..1530.
+    # Earlier band y=1500..1580 missed the text on a Monster-tab panel
+    # captured 2026-05-17; recentred + widened the search.
+    header_band = bgr[1450:1530, 350:750]
     if header_band.size == 0:
         return None
     hsv_h = cv2.cvtColor(header_band, cv2.COLOR_BGR2HSV)
