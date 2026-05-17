@@ -20,6 +20,7 @@ from src.pnc.state import (  # noqa: E402
     detect_popup,
     find_mine_tiles,
     in_world_view,
+    is_furnace_tab_active,
     read_pillage_attempts_available,
     read_sapphire_sidepanel,
     read_troop_count,
@@ -165,6 +166,17 @@ def test_troop_count_returns_none_on_city():
         f"city view should give n_active=None, got {info.n_active}"
 
 
+def test_furnace_tab_active_detection():
+    """Monster-default panel: Furnace inactive. After swiping + tapping
+    Furnace: Furnace active. is_furnace_tab_active must distinguish
+    so the iron-gather script can self-heal post-app-restart when
+    the search panel opens defaulted to Monster Lv40."""
+    monster = load("search_panel_monster_default.png")
+    furnace = load("search_panel_furnace_lv5.png")
+    assert is_furnace_tab_active(monster) is False, "Monster default misread as Furnace"
+    assert is_furnace_tab_active(furnace) is True, "Furnace tap result misread"
+
+
 def test_sapphire_active_in_city_view():
     """City fixture shows 'Gathering 06:35:43' on sapphire row."""
     city = load("city_view_clean.png")
@@ -266,6 +278,7 @@ def _run_all():
         test_troop_count_5of5,
         test_troop_count_5of5_cluster_2026_05_17,
         test_troop_count_returns_none_on_city,
+        test_furnace_tab_active_detection,
         test_sapphire_active_in_city_view,
         test_sapphire_idle_in_city_view,
         test_idle_side_panel_state_is_known,

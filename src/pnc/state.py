@@ -680,6 +680,24 @@ def in_world_view(bgr: np.ndarray) -> bool:
 # ---------- search-panel slider ----------
 
 
+def is_furnace_tab_active(bgr: np.ndarray) -> bool:
+    """Detect whether the search panel's Furnace tab is currently
+    selected. The active tab has a yellow diamond underline that's
+    visibly brighter than the other tabs' borders.
+
+    Calibrated 2026-05-17 against:
+      - search_reopen fixture (Monster active): yellow at x≈940 = 0.013
+      - furnace_tapped fixture (Furnace active): yellow at x≈940 = 0.039
+    Threshold 0.025 separates cleanly.
+    """
+    roi = bgr[1800:1950, 890:990]
+    if roi.size == 0:
+        return False
+    hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
+    yellow = cv2.inRange(hsv, np.array([20, 100, 180]), np.array([35, 255, 255]))
+    return bool((yellow > 0).mean() > 0.025)
+
+
 def read_search_panel_lv(bgr: np.ndarray) -> int | None:
     """Read the Lv.N indicator above the slider in the search panel.
 

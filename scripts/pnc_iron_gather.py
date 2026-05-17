@@ -42,6 +42,7 @@ import cv2
 from src.pnc.state import (
     detect_popup,
     in_world_view,
+    is_furnace_tab_active,
     read_search_panel_lv,
     read_troop_count,
 )
@@ -50,7 +51,8 @@ from src.pnc.state import (
 # Calibrated taps (1080×2400). All from GATHER_RUN_STANDARD.md.
 TAP_WORLD_NAV = (84, 2310)
 TAP_SEARCH_MAGNIFIER = (115, 1950)
-TAP_FURNACE_TAB = (900, 1845)
+TAP_FURNACE_TAB = (940, 1850)             # post-swipe Furnace position
+SWIPE_TABS_LEFT = (1000, 1850, 100, 1850, 500)  # reveals Quarry/Furnace
 TAP_SLIDER_MINUS = (70, 1980)
 TAP_SLIDER_PLUS = (1015, 1980)
 TAP_SEARCH_BUTTON = (540, 2280)
@@ -194,6 +196,26 @@ def open_search_panel(tmp: Path, dry_run: bool) -> bool:
     return read_search_panel_lv(bgr) is not None
 
 
+def ensure_furnace_tab(tmp: Path, dry_run: bool) -> bool:
+    """If the Furnace tab isn't selected (e.g. post-app-restart defaults
+    to Monster Lv40), swipe the tab row left and tap Furnace at its
+    post-swipe position. Returns True if Furnace is selected on exit."""
+    bgr = snap(tmp)
+    if bgr is None:
+        return False
+    if is_furnace_tab_active(bgr):
+        return True
+    emit("ensuring_furnace_tab", note="not on Furnace; swiping tab row")
+    if dry_run:
+        return True
+    adb("input", "swipe", *[str(v) for v in SWIPE_TABS_LEFT])
+    time.sleep(2)
+    tap(*TAP_FURNACE_TAB)
+    time.sleep(3)
+    bgr = snap(tmp)
+    return bgr is not None and is_furnace_tab_active(bgr)
+
+
 def main() -> int:
     p = argparse.ArgumentParser()
     p.add_argument("--shot-dir", type=Path, default=Path.home() / "snaps")
@@ -229,9 +251,13 @@ def main() -> int:
     sends_planned = min(free, args.max_sends)
     emit("plan", free_slots=free, sends_planned=sends_planned)
 
-    # Step 3: open search panel and verify slider on Lv5 (once for all sends).
+    # Step 3: open search panel, ensure Furnace tab, verify slider on Lv5.
     if not open_search_panel(tmp, args.dry_run):
         emit("abandon", reason="search_panel_didnt_open")
+        return 2
+
+    if not ensure_furnace_tab(tmp, args.dry_run):
+        emit("abandon", reason="couldnt_select_furnace_tab")
         return 2
 
     lv = adjust_slider_to_target(tmp, args.dry_run)
