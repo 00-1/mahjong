@@ -89,10 +89,30 @@ def detect_popup(bgr: np.ndarray) -> Optional[Popup]:
             _yellow_pixels_near(bgr, cx=540, cy=1907, radius=80):
         return Popup(name="mythic_hero", close_xy=(1005, 390))
 
-    # Alliance Duel Begins: VS shield, red-blue card split
+    # Alliance Duel Begins: VS shield, red-blue card split.
+    # Close X at (990, 585) — the Begins popup is taller and the X
+    # sits near the top.
     if _yellow_pixels_near(bgr, cx=990, cy=585, radius=40) and \
             _red_blue_split_near(bgr, cy=900):
         return Popup(name="alliance_duel", close_xy=(990, 585))
+
+    # Alliance Duel Ends: WIN/LOSE scoreboard. Card is shorter than
+    # Begins so the close X is lower at ~(970, 790), and the colour
+    # split is reversed (WIN = blue on LEFT, LOSE = red on RIGHT). The
+    # X is a thinner outline so yellow density at radius 40 only hits
+    # ~0.10 — use a wider radius and a per-detector threshold.
+    if _has_text_color(bgr, x=920, y=740, w=100, h=100,
+                       hue_range=(15, 40), sat_min=100, val_min=150,
+                       hit_threshold=0.06) and \
+            _has_text_color(bgr, x=100, y=850, w=400, h=100,
+                            hue_range=(100, 130), sat_min=80, val_min=40,
+                            hit_threshold=0.15) and \
+            _has_text_color(bgr, x=580, y=850, w=400, h=100,
+                            hue_range=(165, 180), sat_min=80, val_min=40,
+                            hit_threshold=0.15):
+        # Red wraps around the hue wheel; the LOSE side reads in the
+        # 165..180 band, NOT 0..15.
+        return Popup(name="alliance_duel_ends", close_xy=(970, 790))
 
     # Curio (Rusty Alloy): hammer-style card
     if _yellow_pixels_near(bgr, cx=1005, cy=435, radius=40) and \

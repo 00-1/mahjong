@@ -117,6 +117,20 @@ def test_detect_connection_failed_popup():
     assert popup.confirm_xy == (540, 1440)
 
 
+def test_detect_alliance_duel_ends_popup():
+    """The 'Alliance Duel Ends' popup (captured 2026-05-18) has WIN
+    (blue) on the LEFT and LOSE (red) on the RIGHT — reversed from
+    the Begins variant — and a close X at ~(970, 790). Earlier the
+    detector returned None and popup_dismiss had to fall through to a
+    manual tap."""
+    bgr = load("popup_alliance_duel_ends.png")
+    popup = detect_popup(bgr)
+    assert popup is not None, "missed the popup"
+    assert popup.name == "alliance_duel_ends", \
+        f"got {popup.name}, expected alliance_duel_ends"
+    assert popup.close_xy == (970, 790)
+
+
 def test_detect_mythic_hero_popup():
     """Mythic Hero promo should be recognized so popup_dismiss
     taps the close X at (1005, 390). Mythic Hero must NOT be
@@ -273,6 +287,7 @@ def _run_all():
         test_lv8_mine_grid_percent_reads_are_plausible,
         test_detect_no_popup_on_mine_grid,
         test_detect_connection_failed_popup,
+        test_detect_alliance_duel_ends_popup,
         test_detect_mythic_hero_popup,
         test_view_detection,
         test_troop_count_5of5,
