@@ -636,8 +636,13 @@ def read_troop_count(bgr: np.ndarray) -> TroopInfo:
     #
     # PNC renders timer text in two colour families: TEAL (hue ~85..100)
     # for long Gathering timers, ORANGE/GOLD (hue ~20..35) for short
-    # Returning... / Marching timers. Calibrated 2026-05-17.
-    ROW_CENTERS_Y = [345, 435, 525, 615, 705]
+    # Returning... / Marching timers.
+    # Recalibrated 2026-05-19 on 1080×2400 device: original values
+    # [345,435,525,615,705] targeted the Troop Info header area (rows 1-2
+    # were false positives from VIP badge / panel header gold pixels).
+    # This accidentally gave correct n_active=5 when all 5 slots were
+    # full (2 false + 3 real = 5) but over-counted at 4/5 and below.
+    ROW_CENTERS_Y = [525, 615, 705, 795, 885]
     ROW_HALF_HEIGHT = 20
     PER_ROW_MIN_PIXELS = 200
     PANEL_BG_V_MAX = 100      # panel background V is ~50..70; world map > 110

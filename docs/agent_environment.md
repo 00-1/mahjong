@@ -111,6 +111,29 @@ in this Claude session's process tree. They die when Claude exits.
 For true persistence across Claude restarts, write a Termux Boot script
 or use `cron` from `tsu`/`pkg install cronie`.
 
+## Screenshots in the agent chat context
+
+Claude Code multi-image requests error at 2000px dimension. Always read
+`*_small.jpg` siblings (produced by `snap_small.sh`, scaled to 540px wide)
+rather than full PNGs. Never accumulate more than ~3 images per context
+window; run `/compact` or start a new session if snaps pile up.
+
+## Iron-gather cron cycles
+
+Run `popup_dismiss` then `iron_gather` directly — do **not** use
+`pnc_cron_tick.py` as the outer wrapper for gather-only sessions. The tick
+script calls `ensure_world_view` which may incorrectly detect city-view
+and tap HOME (84, 2310), which on this device opens the Rewards Center /
+Monthly Card store overlay. The iron_gather script handles the world-view
+transition itself safely.
+
+The Monthly Card and Rewards Center full-screen overlays are not registered
+in `detect_popup`. If they appear, dismiss with `adb shell input keyevent 4`
+(Back key) before retrying.
+
+Battery saver dialog (Android system, not PNC): tap "Got it" at (314, 2100)
+on a 1080×2400 device. Appears at <20% and again at <10% battery.
+
 ## Known fragile points (ordered by frequency hit)
 
 1. **Wireless debugging port rotates** — every WD toggle or reboot.
@@ -123,3 +146,7 @@ or use `cron` from `tsu`/`pkg install cronie`.
    scroll momentum settle, or (c) the panel snapped to a different scroll
    position than the snap captured. Wait 3 s after a scroll, snap,
    immediately tap based on the snap, no other adb input in between.
+6. **`screen_keepalive.sh` must be running** — start it with
+   `nohup bash ~/screen_keepalive.sh >/dev/null 2>&1 &` at session start.
+   Without it the screen sleeps, HyperOS drops the wireless ADB connection,
+   and the game process can be suspended mid-cycle.
