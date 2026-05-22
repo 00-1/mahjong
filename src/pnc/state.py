@@ -121,6 +121,16 @@ def detect_popup(bgr: np.ndarray) -> Optional[Popup]:
                             hit_threshold=0.05):
         return Popup(name="curio", close_xy=(1005, 435))
 
+    # Dragon Breath Treasure / full-screen purchase overlay:
+    # The raw PNG (linear-gamma adb screencap) has a near-black status bar
+    # (top 100px V<20) because the overlay hides it entirely. The dragon art
+    # at y=350-750 has warm orange at high saturation (H=10-45, S>150, V>50).
+    if _crop_mean_hsv(bgr, 0, 0, 1080, 100)[2] < 20 and \
+            _has_text_color(bgr, x=0, y=350, w=1080, h=400,
+                            hue_range=(10, 45), sat_min=150, val_min=50,
+                            hit_threshold=0.30):
+        return Popup(name="dragon_breath_treasure", close_xy=(1005, 65))
+
     # Limited Offer: tabs at top (Daily Discount / Limited Offer / Hero Sale)
     # No close X — needs back keyevent
     if _has_text_color(bgr, x=80, y=80, w=300, h=80,
