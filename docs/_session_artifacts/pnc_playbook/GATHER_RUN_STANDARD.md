@@ -194,6 +194,15 @@ Sleeps are not optional — the game animates between every step. The
 4-second post-Depart sleep gives the dialog time to dismiss before the
 next snap. Loop this block per free slot.
 
+## Lv5 furnace gather time
+
+Observed: **~1:58** (not 2:00). Timer rows show `Gathering 01:58:xx`
+immediately after troops arrive at the furnace. Schedule accordingly.
+
+Formula: `march_arrival_time + 1:56` gives a ~2 min early-arrival buffer.
+Rounding up to `+ 2:00` leaves troops idle 2–4 min per cycle (confirmed
+2026-06-01: cron at +2:04 arrived after troops had been back ~3 min).
+
 ## Cron-driven recheck cadence
 
 The successful schedule was **next-recheck = max(soonest_return + 5 min,
@@ -246,6 +255,14 @@ Things that landed during this run and how to dismiss:
   and give it ~8 s to reconnect before snapping. May be followed by a
   Mythic Hero / event promo card (close X at (1005, 390)) or a chat
   panel (`keyevent 4` ×2).
+- **"Relocate" popup** (added 2026-06-01): appears when another player uses a teleport near our
+  castle; opens the Relocate confirmation dialog. `keyevent KEYCODE_BACK` escalates to the
+  Relocate confirmation (CANCEL / 200,000-gold Relocate). Tap **CANCEL** at ~**(155, 648)**
+  in 540px snap coords to dismiss. Do NOT press BACK again — it may open the Resource Trade screen.
+- **Resource Trade screen** (added 2026-06-01): can open unexpectedly when BACK or stray taps
+  land on another player's castle. Shows "RESOURCE TRADE" header, transport sliders, CONFIRM
+  button. BACK key does NOT dismiss it reliably from this state. Tap the **back arrow** at
+  ~**(40, 68)** in 540px snap coords to exit cleanly.
 - **"New version found, please install the latest update assets"**
   (added 2026-05-12, recurred 2026-05-14): PNC update prompt with
   CONFIRM at **(540, 1440)**. Wait ~25 s for the loading splash
