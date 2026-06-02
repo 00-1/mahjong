@@ -1,0 +1,118 @@
+[
+  {
+    "anchor_key": [
+      "main_board",
+      0,
+      1
+    ],
+    "sample_cx": 382,
+    "sample_cy": 792,
+    "offset": [
+      75,
+      80
+    ],
+    "predicted_tile_id": "tile_002",
+    "confidence": 0.10843373493975904,
+    "method_scores": {
+      "phash_top": "tile_002",
+      "phash_score": 106.0,
+      "ncc_top": "tile_007",
+      "ncc_score": 0.7892614454030991,
+      "hist_top": "tile_007",
+      "hist_score": 2.132469009377003,
+      "orb_top": "tile_005",
+      "orb_top_score": 0.106,
+      "v_mean": 123.7,
+      "sat_frac": 0.496,
+      "cream_frac": 0.299,
+      "margin": 0.108
+    }
+  },
+  {
+    "anchor_key": [
+      "main_board",
+      0,
+      5
+    ],
+    "sample_cx": 989,
+    "sample_cy": 792,
+    "offset": [
+      -75,
+      80
+    ],
+    "predicted_tile_id": "tile_001",
+    "confidence": 0.06348314606741573,
+    "method_scores": {
+      "phash_top": "tile_016",
+      "phash_score": 110.0,
+      "ncc_top": "tile_012",
+      "ncc_score": 0.9216760620474815,
+      "hist_top": "tile_007",
+      "hist_score": 6.176803860871587,
+      "orb_top": "tile_005",
+      "orb_top_score": 0.015,
+      "v_mean": 62.3,
+      "sat_frac": 1.0,
+      "cream_frac": 0.0,
+      "margin": 0.213
+    }
+  },
+  {
+    "anchor_key": [
+      "main_board",
+      2,
+      1
+    ],
+    "sample_cx": 307,
+    "sample_cy": 876,
+    "offset": [
+      0,
+      -80
+    ],
+    "predicted_tile_id": "tile_006",
+    "confidence": 0.24375,
+    "method_scores": {
+      "phash_top": "tile_008",
+      "phash_score": 120.0,
+      "ncc_top": "tile_012",
+      "ncc_score": 0.7980393618345261,
+      "hist_top": "tile_011",
+      "hist_score": 2.602234602636752,
+      "orb_top": "tile_006",
+      "orb_top_score": 0.207,
+      "v_mean": 97.9,
+      "sat_frac": 0.551,
+      "cream_frac": 0.18,
+      "margin": 0.094
+    }
+  },
+  {
+    "anchor_key": [
+      "main_board",
+      4,
+      0
+    ],
+    "sample_cx": 230,
+    "sample_cy": 1200,
+    "offset": [
+      75,
+      0
+    ],
+    "predicted_tile_id": "tile_002",
+    "confidence": 0.07666666666666666,
+    "method_scores": {
+      "phash_top": "tile_014",
+      "phash_score": 116.0,
+      "ncc_top": "tile_010",
+      "ncc_score": 0.8656056970357895,
+      "hist_top": "tile_007",
+      "hist_score": 6.478633740717205,
+      "orb_top": "tile_005",
+      "orb_top_score": 0.015,
+      "v_mean": 82.8,
+      "sat_frac": 1.0,
+      "cream_frac": 0.0,
+      "margin": 0.227
+    }
+  }
+]

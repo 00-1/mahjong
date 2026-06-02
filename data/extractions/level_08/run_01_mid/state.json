@@ -1,0 +1,178 @@
+{
+  "level": 8,
+  "image": "data/screenshots/level_08/run_01_mid.jpg",
+  "image_size": [
+    1220,
+    2712
+  ],
+  "main_board": [
+    {
+      "row": 0,
+      "col": 0,
+      "bbox": [
+        160,
+        641,
+        143,
+        142
+      ],
+      "tile_id": "tile_010",
+      "stack_depth": 2
+    },
+    {
+      "row": 0,
+      "col": 3,
+      "bbox": [
+        690,
+        722,
+        143,
+        143
+      ],
+      "tile_id": "tile_005",
+      "stack_depth": 2
+    },
+    {
+      "row": 0,
+      "col": 4,
+      "bbox": [
+        841,
+        722,
+        143,
+        143
+      ],
+      "tile_id": "tile_011",
+      "stack_depth": 2
+    },
+    {
+      "row": 2,
+      "col": 4,
+      "bbox": [
+        841,
+        885,
+        143,
+        143
+      ],
+      "tile_id": "tile_015",
+      "stack_depth": 1
+    },
+    {
+      "row": 3,
+      "col": 2,
+      "bbox": [
+        387,
+        966,
+        143,
+        143
+      ],
+      "tile_id": "tile_005",
+      "stack_depth": 1
+    },
+    {
+      "row": 3,
+      "col": 3,
+      "bbox": [
+        690,
+        885,
+        143,
+        143
+      ],
+      "tile_id": "tile_003",
+      "stack_depth": 2
+    },
+    {
+      "row": 4,
+      "col": 0,
+      "bbox": [
+        84,
+        1129,
+        143,
+        142
+      ],
+      "tile_id": "tile_007",
+      "stack_depth": 1
+    },
+    {
+      "row": 4,
+      "col": 3,
+      "bbox": [
+        690,
+        1048,
+        143,
+        142
+      ],
+      "tile_id": "tile_004",
+      "stack_depth": 2
+    }
+  ],
+  "queues": [
+    {
+      "queue_id": "left_lower",
+      "bbox": [
+        175,
+        1454,
+        143,
+        143
+      ],
+      "tile_id": "tile_014",
+      "queue_remaining": null
+    },
+    {
+      "queue_id": "right_lower",
+      "bbox": [
+        857,
+        1454,
+        143,
+        143
+      ],
+      "tile_id": "tile_002",
+      "queue_remaining": null
+    },
+    {
+      "queue_id": "right_upper",
+      "bbox": [
+        539,
+        1341,
+        142,
+        143
+      ],
+      "tile_id": "tile_009",
+      "queue_remaining": null
+    }
+  ],
+  "tray": [
+    {
+      "slot": 0,
+      "bbox": [
+        84,
+        2311,
+        143,
+        143
+      ],
+      "tile_id": "tile_002"
+    },
+    {
+      "slot": 1,
+      "bbox": [
+        236,
+        2311,
+        143,
+        143
+      ],
+      "tile_id": "tile_005"
+    },
+    {
+      "slot": 2,
+      "bbox": [
+        387,
+        2311,
+        143,
+        143
+      ],
+      "tile_id": "tile_009"
+    }
+  ],
+  "boost_counts": {
+    "withdraw": 0,
+    "retreat": 0,
+    "refresh": 0
+  }
+}

@@ -1,0 +1,7 @@
+- [User environment](user_environment.md) — Poco F6 Android phone running Termux; ARM, no systemd, `pkg` for packages
+- [ADB loopback setup](adb_loopback_setup.md) — driving the phone UI via wireless-debugging adb on 127.0.0.1; reconnect flow and MIUI input-injection caveat
+- [Bring Termux to foreground after tests](feedback_termux_foreground.md) — always return to Termux after adb UI tests so the user can see when a run ends
+- [Narration via ~/say during phone-UI work](feedback_terse_narration.md) — call `~/say "<short>"` per step; skip raw output; return to Termux + status line at end
+- [PNC gather playbook](reference_pnc.md) — `~/pnc_explore/NOTES.md` is the authoritative reference for any Puzzles & Chaos work; consult before tapping
+- [Use judgment driving UIs](feedback_use_judgment.md) — each snap is an open question; recover from wrong-screen/missing-button/unexpected-dialog by reasoning, not by retrying the script
+- [Announce via ~/say before any phone test](feedback_announce_before_test.md) — voice the heads-up FIRST so user (who may be using the phone) can interrupt before taps start

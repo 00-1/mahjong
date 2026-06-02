@@ -1,0 +1,197 @@
+{
+  "level": 8,
+  "image": "/data/data/com.termux/files/home/snaps/autoplay/autoplay_wait_1778338199038_1.png",
+  "image_size": [
+    1080,
+    2400
+  ],
+  "main_board": [
+    {
+      "row": 0,
+      "col": 1,
+      "bbox": [
+        142,
+        558,
+        126,
+        126
+      ],
+      "tile_id": "tile_001",
+      "stack_depth": 2,
+      "tile_id_distance": 22
+    },
+    {
+      "row": 0,
+      "col": 3,
+      "bbox": [
+        544,
+        558,
+        126,
+        126
+      ],
+      "tile_id": "tile_002",
+      "stack_depth": 2,
+      "tile_id_distance": 28
+    },
+    {
+      "row": 1,
+      "col": 2,
+      "bbox": [
+        410,
+        701,
+        126,
+        126
+      ],
+      "tile_id": "tile_010",
+      "stack_depth": 2,
+      "tile_id_distance": 30
+    },
+    {
+      "row": 1,
+      "col": 3,
+      "bbox": [
+        611,
+        701,
+        126,
+        126
+      ],
+      "tile_id": "tile_006",
+      "stack_depth": 1,
+      "tile_id_distance": 6
+    },
+    {
+      "row": 2,
+      "col": 1,
+      "bbox": [
+        276,
+        774,
+        126,
+        126
+      ],
+      "tile_id": "tile_007",
+      "stack_depth": 2,
+      "tile_id_distance": 24
+    },
+    {
+      "row": 3,
+      "col": 3,
+      "bbox": [
+        544,
+        845,
+        126,
+        127
+      ],
+      "tile_id": "tile_008",
+      "stack_depth": 2,
+      "tile_id_distance": 12
+    },
+    {
+      "row": 4,
+      "col": 1,
+      "bbox": [
+        209,
+        918,
+        126,
+        126
+      ],
+      "tile_id": "tile_008",
+      "stack_depth": 2,
+      "tile_id_distance": 18
+    },
+    {
+      "row": 4,
+      "col": 2,
+      "bbox": [
+        410,
+        989,
+        126,
+        127
+      ],
+      "tile_id": "tile_007",
+      "stack_depth": 2,
+      "tile_id_distance": 30
+    },
+    {
+      "row": 4,
+      "col": 3,
+      "bbox": [
+        544,
+        989,
+        126,
+        127
+      ],
+      "tile_id": "tile_013",
+      "stack_depth": 2,
+      "tile_id_distance": 28
+    },
+    {
+      "row": 4,
+      "col": 4,
+      "bbox": [
+        745,
+        989,
+        126,
+        127
+      ],
+      "tile_id": "tile_013",
+      "stack_depth": 1,
+      "tile_id_distance": 28
+    },
+    {
+      "row": 4,
+      "col": 5,
+      "bbox": [
+        879,
+        989,
+        126,
+        127
+      ],
+      "tile_id": "tile_001",
+      "stack_depth": 1,
+      "tile_id_distance": 20
+    }
+  ],
+  "queues": [
+    {
+      "queue_id": "left_lower",
+      "bbox": [
+        235,
+        1278,
+        126,
+        126
+      ],
+      "tile_id": "tile_011",
+      "queue_remaining": null,
+      "tile_id_distance": 6
+    },
+    {
+      "queue_id": "right_lower",
+      "bbox": [
+        719,
+        1278,
+        126,
+        126
+      ],
+      "tile_id": "tile_010",
+      "queue_remaining": null,
+      "tile_id_distance": 14
+    },
+    {
+      "queue_id": "right_upper",
+      "bbox": [
+        477,
+        1198,
+        126,
+        126
+      ],
+      "tile_id": "tile_001",
+      "queue_remaining": null,
+      "tile_id_distance": 22
+    }
+  ],
+  "tray": [],
+  "boost_counts": {
+    "withdraw": 0,
+    "retreat": 0,
+    "refresh": 0
+  }
+}

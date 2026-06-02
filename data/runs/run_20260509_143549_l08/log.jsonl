@@ -1,0 +1,6 @@
+{"event": "run_start", "ts": "2026-05-09T14:35:49.696Z", "run_id": "run_20260509_143549_l08", "level": 8, "started_at": "2026-05-09T14:35:49Z", "min_wait": 0.3, "max_wait": 3.0, "max_tap_retries": 2}
+{"event": "decision", "ts": "2026-05-09T14:35:53.311Z", "step": 0, "reason": "TRIPLET", "tap": null, "tray": 2, "score": 9.0, "lookahead_used": false, "lookahead_value": null, "decide_ms": 0, "num_alternatives": 3}
+{"event": "occult_predict", "ts": "2026-05-09T14:35:56.097Z", "step": 0, "predictions_count": 4, "occult_ms": 2676, "high_confidence": 0}
+{"event": "triplet_burst", "ts": "2026-05-09T14:35:56.100Z", "step": 0, "tile": "dandelion", "taps": 2, "locations": ["(3,2)", "(4,1)"]}
+{"event": "exception", "ts": "2026-05-09T14:36:01.920Z", "step": 0, "msg": "'str' object has no attribute 'get'", "type": "AttributeError"}
+{"event": "run_end", "ts": "2026-05-09T14:36:01.926Z", "run_id": "run_20260509_143549_l08", "status": "abandoned", "reason": "exception:AttributeError", "steps": 0, "level": 8, "duration_sec": 12.2, "level_win_rate": 0.10526315789473684}

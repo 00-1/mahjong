@@ -1,0 +1,92 @@
+{
+  "should_stop": false,
+  "reason_code": "TRIPLET",
+  "tap": {
+    "x": 272,
+    "y": 693,
+    "location": "(1,0)"
+  },
+  "tile_id": "tile_012",
+  "label": "sunflower",
+  "confidence": 0.95,
+  "score": 8.0,
+  "lookahead_used": false,
+  "lookahead_expected_value": null,
+  "search_method": null,
+  "reason": "3x sunflower: tap (1,0) + (2,3) + queue:right_lower",
+  "alternatives": [
+    {
+      "x": 674,
+      "y": 764,
+      "location": "(2,3)",
+      "tile_id": "tile_012",
+      "label": "sunflower",
+      "score": 8.0,
+      "reason": "3x sunflower: tap (1,0) + (2,3) + queue:right_lower"
+    },
+    {
+      "x": 762,
+      "y": 1341,
+      "location": "queue:right_lower",
+      "tile_id": "tile_012",
+      "label": "sunflower",
+      "score": 8.0,
+      "reason": "3x sunflower: tap (1,0) + (2,3) + queue:right_lower"
+    },
+    {
+      "x": 540,
+      "y": 1261,
+      "location": "queue:right_upper",
+      "tile_id": "tile_002",
+      "label": "butterfly_orb",
+      "score": -1.7857142857142856,
+      "reason": "adds to tray; 0 already in tray, 2 total visible"
+    }
+  ],
+  "triplet_sequence": [
+    {
+      "x": 272,
+      "y": 693,
+      "location": "(1,0)"
+    },
+    {
+      "x": 674,
+      "y": 764,
+      "location": "(2,3)"
+    },
+    {
+      "x": 762,
+      "y": 1341,
+      "location": "queue:right_lower"
+    }
+  ],
+  "state": {
+    "level": 8,
+    "image_size": [
+      1080,
+      2400
+    ],
+    "tray_filled": 1,
+    "tray": [
+      "bee"
+    ],
+    "main_board_count": 9,
+    "queue_count": 3,
+    "tile_counts": {
+      "lantern": 2,
+      "sunflower": 3,
+      "pinwheel": 1,
+      "paper_crane": 1,
+      "plumeria": 1,
+      "butterfly_orb": 2,
+      "blue_butterfly": 1,
+      "dandelion": 1,
+      "bee": 1
+    },
+    "looks_like_puzzle": true
+  },
+  "image_size": {
+    "w": 1080,
+    "h": 2400
+  }
+}

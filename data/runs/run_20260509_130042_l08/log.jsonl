@@ -1,0 +1,5 @@
+{"event": "run_start", "ts": "2026-05-09T13:00:42.872Z", "run_id": "run_20260509_130042_l08", "level": 8, "started_at": "2026-05-09T13:00:42Z", "min_wait": 0.3, "max_wait": 3.0, "max_tap_retries": 2}
+{"event": "decision", "ts": "2026-05-09T13:00:47.774Z", "step": 0, "reason": "GAME_OVER", "tap": null, "tray": 7, "score": null, "decide_ms": 2, "num_alternatives": 0}
+{"event": "occult_predict", "ts": "2026-05-09T13:00:56.898Z", "step": 0, "predictions_count": 10, "occult_ms": 8971, "high_confidence": 0}
+{"event": "game_over", "ts": "2026-05-09T13:00:56.899Z", "step": 0}
+{"event": "run_end", "ts": "2026-05-09T13:00:56.903Z", "run_id": "run_20260509_130042_l08", "status": "lost", "reason": "game_over", "steps": 0, "level": 8, "duration_sec": 14.0, "level_win_rate": 0.18181818181818182}

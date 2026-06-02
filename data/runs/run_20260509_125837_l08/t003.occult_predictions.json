@@ -1,0 +1,291 @@
+[
+  {
+    "anchor_key": [
+      "main_board",
+      0,
+      0
+    ],
+    "sample_cx": 230,
+    "sample_cy": 712,
+    "offset": [
+      75,
+      0
+    ],
+    "predicted_tile_id": "tile_005",
+    "confidence": 0.21,
+    "method_scores": {
+      "phash_top": "tile_005",
+      "phash_score": 114.0,
+      "ncc_top": "tile_002",
+      "ncc_score": 0.795489028096199,
+      "hist_top": "tile_011",
+      "hist_score": 3.274631131685044,
+      "orb_top": "tile_005",
+      "orb_top_score": 0.017,
+      "v_mean": 109.1,
+      "sat_frac": 0.629,
+      "cream_frac": 0.178,
+      "margin": 0.21
+    }
+  },
+  {
+    "anchor_key": [
+      "main_board",
+      0,
+      2
+    ],
+    "sample_cx": 533,
+    "sample_cy": 712,
+    "offset": [
+      75,
+      0
+    ],
+    "predicted_tile_id": "tile_006",
+    "confidence": 0.2875,
+    "method_scores": {
+      "phash_top": "tile_016",
+      "phash_score": 110.0,
+      "ncc_top": "tile_015",
+      "ncc_score": 0.7495913803577423,
+      "hist_top": "tile_007",
+      "hist_score": 2.3026841097760027,
+      "orb_top": "tile_006",
+      "orb_top_score": 0.138,
+      "v_mean": 192.2,
+      "sat_frac": 0.445,
+      "cream_frac": 0.591,
+      "margin": 0.138
+    }
+  },
+  {
+    "anchor_key": [
+      "main_board",
+      0,
+      5
+    ],
+    "sample_cx": 989,
+    "sample_cy": 792,
+    "offset": [
+      -75,
+      80
+    ],
+    "predicted_tile_id": "tile_001",
+    "confidence": 0.06348314606741573,
+    "method_scores": {
+      "phash_top": "tile_016",
+      "phash_score": 110.0,
+      "ncc_top": "tile_012",
+      "ncc_score": 0.9216760620474815,
+      "hist_top": "tile_007",
+      "hist_score": 6.176803860871587,
+      "orb_top": "tile_005",
+      "orb_top_score": 0.015,
+      "v_mean": 62.3,
+      "sat_frac": 1.0,
+      "cream_frac": 0.0,
+      "margin": 0.213
+    }
+  },
+  {
+    "anchor_key": [
+      "main_board",
+      1,
+      3
+    ],
+    "sample_cx": 836,
+    "sample_cy": 954,
+    "offset": [
+      75,
+      80
+    ],
+    "predicted_tile_id": "tile_005",
+    "confidence": 0.1935483870967742,
+    "method_scores": {
+      "phash_top": "tile_005",
+      "phash_score": 108.0,
+      "ncc_top": "tile_009",
+      "ncc_score": 0.9821419548243284,
+      "hist_top": "tile_007",
+      "hist_score": 2.9442801193839574,
+      "orb_top": "tile_005",
+      "orb_top_score": 0.03,
+      "v_mean": 180.9,
+      "sat_frac": 0.526,
+      "cream_frac": 0.524,
+      "margin": 0.194
+    }
+  },
+  {
+    "anchor_key": [
+      "main_board",
+      2,
+      1
+    ],
+    "sample_cx": 382,
+    "sample_cy": 876,
+    "offset": [
+      75,
+      -80
+    ],
+    "predicted_tile_id": "tile_012",
+    "confidence": 0.23404255319148937,
+    "method_scores": {
+      "phash_top": "tile_014",
+      "phash_score": 112.0,
+      "ncc_top": "tile_012",
+      "ncc_score": 0.9523016847670078,
+      "hist_top": "tile_007",
+      "hist_score": 2.433612991811981,
+      "orb_top": "tile_013",
+      "orb_top_score": 0.058,
+      "v_mean": 134.5,
+      "sat_frac": 0.469,
+      "cream_frac": 0.391,
+      "margin": 0.234
+    }
+  },
+  {
+    "anchor_key": [
+      "main_board",
+      3,
+      2
+    ],
+    "sample_cx": 533,
+    "sample_cy": 1037,
+    "offset": [
+      75,
+      0
+    ],
+    "predicted_tile_id": "tile_003",
+    "confidence": 0.14423076923076922,
+    "method_scores": {
+      "phash_top": "tile_003",
+      "phash_score": 114.0,
+      "ncc_top": "tile_011",
+      "ncc_score": 0.7115884721279144,
+      "hist_top": "tile_011",
+      "hist_score": 2.368876050567169,
+      "orb_top": "tile_006",
+      "orb_top_score": 0.069,
+      "v_mean": 126.5,
+      "sat_frac": 0.589,
+      "cream_frac": 0.224,
+      "margin": 0.144
+    }
+  },
+  {
+    "anchor_key": [
+      "main_board",
+      3,
+      3
+    ],
+    "sample_cx": 836,
+    "sample_cy": 957,
+    "offset": [
+      75,
+      -80
+    ],
+    "predicted_tile_id": "tile_005",
+    "confidence": 0.22018348623853212,
+    "method_scores": {
+      "phash_top": "tile_005",
+      "phash_score": 114.0,
+      "ncc_top": "tile_009",
+      "ncc_score": 1.0100552048534155,
+      "hist_top": "tile_007",
+      "hist_score": 2.934454523348103,
+      "orb_top": "tile_005",
+      "orb_top_score": 0.045,
+      "v_mean": 181.5,
+      "sat_frac": 0.524,
+      "cream_frac": 0.526,
+      "margin": 0.22
+    }
+  },
+  {
+    "anchor_key": [
+      "main_board",
+      4,
+      1
+    ],
+    "sample_cx": 307,
+    "sample_cy": 1280,
+    "offset": [
+      0,
+      80
+    ],
+    "predicted_tile_id": "tile_005",
+    "confidence": 0.08139534883720931,
+    "method_scores": {
+      "phash_top": "tile_014",
+      "phash_score": 114.0,
+      "ncc_top": "tile_006",
+      "ncc_score": 0.6436501443386078,
+      "hist_top": "tile_011",
+      "hist_score": 3.3895360958541882,
+      "orb_top": "tile_005",
+      "orb_top_score": 0.075,
+      "v_mean": 148.6,
+      "sat_frac": 0.646,
+      "cream_frac": 0.364,
+      "margin": 0.081
+    }
+  },
+  {
+    "anchor_key": [
+      "main_board",
+      4,
+      2
+    ],
+    "sample_cx": 458,
+    "sample_cy": 1280,
+    "offset": [
+      0,
+      80
+    ],
+    "predicted_tile_id": "tile_006",
+    "confidence": 0.25,
+    "method_scores": {
+      "phash_top": "tile_006",
+      "phash_score": 112.0,
+      "ncc_top": "tile_011",
+      "ncc_score": 0.6537335515022278,
+      "hist_top": "tile_011",
+      "hist_score": 5.1097864075829476,
+      "orb_top": "tile_005",
+      "orb_top_score": 0.03,
+      "v_mean": 132.1,
+      "sat_frac": 0.785,
+      "cream_frac": 0.222,
+      "margin": 0.25
+    }
+  },
+  {
+    "anchor_key": [
+      "queue",
+      "right_upper"
+    ],
+    "sample_cx": 685,
+    "sample_cy": 1332,
+    "offset": [
+      75,
+      -80
+    ],
+    "predicted_tile_id": "tile_002",
+    "confidence": 0.16666666666666666,
+    "method_scores": {
+      "phash_top": "tile_016",
+      "phash_score": 112.0,
+      "ncc_top": "tile_015",
+      "ncc_score": 0.6037743985652924,
+      "hist_top": "tile_007",
+      "hist_score": 3.8990912288703066,
+      "orb_top": "tile_002",
+      "orb_top_score": 0.024,
+      "v_mean": 119.0,
+      "sat_frac": 0.769,
+      "cream_frac": 0.234,
+      "margin": 0.167
+    }
+  }
+]

@@ -1,0 +1,1 @@
+{"event": "run_start", "ts": "2026-05-09T08:35:58.284Z", "run_id": "run_20260509_083558_l08", "level": 8, "started_at": "2026-05-09T08:35:58Z", "min_wait": 0.3, "max_wait": 3.0, "max_tap_retries": 2}

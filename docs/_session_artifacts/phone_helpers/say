@@ -1,0 +1,14 @@
+#!/data/data/com.termux/files/usr/bin/bash
+# Speak the argument aloud via espeak → paplay (PulseAudio sink, plays while
+# Termux is backgrounded). Detached so it doesn't block.
+set -u
+PATH=/data/data/com.termux/files/usr/bin:$PATH
+text="$*"
+[ -z "$text" ] && exit 0
+wav="/data/data/com.termux/files/usr/tmp/say.$$.wav"
+setsid -f sh -c "
+  espeak -s 175 -w '$wav' -- \"\$1\" >/dev/null 2>&1 && \
+  paplay '$wav' >/dev/null 2>&1
+  rm -f '$wav'
+" _ "$text" </dev/null >/dev/null 2>&1 &
+exit 0

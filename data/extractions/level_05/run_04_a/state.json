@@ -1,0 +1,112 @@
+{
+  "level": 5,
+  "image": "data/screenshots/level_05/run_04_a.jpg",
+  "image_size": [
+    1220,
+    2712
+  ],
+  "main_board": [
+    {
+      "row": 0,
+      "col": 1,
+      "bbox": [
+        311,
+        641,
+        143,
+        142
+      ],
+      "tile_id": "tile_007",
+      "stack_depth": 2
+    },
+    {
+      "row": 0,
+      "col": 4,
+      "bbox": [
+        841,
+        803,
+        143,
+        143
+      ],
+      "tile_id": "tile_005",
+      "stack_depth": 2
+    },
+    {
+      "row": 0,
+      "col": 5,
+      "bbox": [
+        993,
+        803,
+        142,
+        143
+      ],
+      "tile_id": "tile_007",
+      "stack_depth": 2
+    },
+    {
+      "row": 1,
+      "col": 4,
+      "bbox": [
+        766,
+        966,
+        142,
+        143
+      ],
+      "tile_id": "tile_003",
+      "stack_depth": 2
+    },
+    {
+      "row": 2,
+      "col": 2,
+      "bbox": [
+        463,
+        1129,
+        142,
+        142
+      ],
+      "tile_id": "tile_003",
+      "stack_depth": 2
+    },
+    {
+      "row": 2,
+      "col": 3,
+      "bbox": [
+        614,
+        1129,
+        143,
+        142
+      ],
+      "tile_id": "tile_005",
+      "stack_depth": 2
+    }
+  ],
+  "queues": [
+    {
+      "queue_id": "left_lower",
+      "bbox": [
+        107,
+        1454,
+        143,
+        143
+      ],
+      "tile_id": "tile_005",
+      "queue_remaining": null
+    }
+  ],
+  "tray": [
+    {
+      "slot": 0,
+      "bbox": [
+        84,
+        2311,
+        143,
+        143
+      ],
+      "tile_id": "tile_007"
+    }
+  ],
+  "boost_counts": {
+    "withdraw": 0,
+    "retreat": 0,
+    "refresh": 0
+  }
+}

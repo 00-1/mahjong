@@ -22,3 +22,5 @@ Thumbs.db
 *.log
 debug_*.png
 .cache/
+.venv/
+data/levels/*/anchor_priors.json.bak.*

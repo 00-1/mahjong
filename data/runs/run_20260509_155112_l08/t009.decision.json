@@ -1,0 +1,92 @@
+{
+  "should_stop": false,
+  "reason_code": "TRIPLET",
+  "tap": {
+    "x": 607,
+    "y": 764,
+    "location": "(1,3)"
+  },
+  "tile_id": "tile_004",
+  "label": "pink_daisy",
+  "confidence": 0.95,
+  "score": 8.0,
+  "lookahead_used": false,
+  "lookahead_expected_value": null,
+  "reason": "3x pink_daisy: tap (1,3) + (4,1) + (4,4)",
+  "alternatives": [
+    {
+      "x": 205,
+      "y": 1052,
+      "location": "(4,1)",
+      "tile_id": "tile_004",
+      "label": "pink_daisy",
+      "score": 8.0,
+      "reason": "3x pink_daisy: tap (1,3) + (4,1) + (4,4)"
+    },
+    {
+      "x": 808,
+      "y": 981,
+      "location": "(4,4)",
+      "tile_id": "tile_004",
+      "label": "pink_daisy",
+      "score": 8.0,
+      "reason": "3x pink_daisy: tap (1,3) + (4,1) + (4,4)"
+    },
+    {
+      "x": 138,
+      "y": 621,
+      "location": "(0,0)",
+      "tile_id": "tile_005",
+      "label": "pinwheel",
+      "score": 8.0,
+      "reason": "3x pinwheel: tap (0,0) + (0,5) + (3,3)"
+    }
+  ],
+  "triplet_sequence": [
+    {
+      "x": 607,
+      "y": 764,
+      "location": "(1,3)"
+    },
+    {
+      "x": 205,
+      "y": 1052,
+      "location": "(4,1)"
+    },
+    {
+      "x": 808,
+      "y": 981,
+      "location": "(4,4)"
+    }
+  ],
+  "state": {
+    "level": 8,
+    "image_size": [
+      1080,
+      2400
+    ],
+    "tray_filled": 2,
+    "tray": [
+      "swallow",
+      "lantern"
+    ],
+    "main_board_count": 11,
+    "queue_count": 3,
+    "tile_counts": {
+      "pinwheel": 3,
+      "plumeria": 1,
+      "lantern": 2,
+      "bee": 2,
+      "pink_daisy": 3,
+      "swallow": 2,
+      "paper_crane": 1,
+      "blue_butterfly": 1,
+      "lotus": 1
+    },
+    "looks_like_puzzle": true
+  },
+  "image_size": {
+    "w": 1080,
+    "h": 2400
+  }
+}

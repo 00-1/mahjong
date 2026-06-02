@@ -1,0 +1,4 @@
+{"event": "run_start", "ts": "2026-05-09T11:21:18.064Z", "run_id": "run_20260509_112118_l08", "level": 8, "started_at": "2026-05-09T11:21:18Z", "min_wait": 0.3, "max_wait": 3.0, "max_tap_retries": 2}
+{"event": "decision", "ts": "2026-05-09T11:21:22.502Z", "step": 0, "reason": "EXPLORE", "tap": {"x": 138, "y": 621, "location": "(0,0)"}, "tray": 0, "score": -2.0, "decide_ms": 0, "num_alternatives": 3}
+{"event": "tap", "ts": "2026-05-09T11:21:22.502Z", "step": 0, "x": 138, "y": 621, "loc": "(0,0)", "tile": "kite", "reason": "EXPLORE", "score": -2.0, "attempt": 1}
+{"event": "verify", "ts": "2026-05-09T11:21:26.888Z", "step": 0, "success": true, "reason": "ok", "notes": "main_board (0,0) tile_010 -> None", "attempt": 1, "tap_ms": 120, "wait_ms": 4265, "elapsed_sec": 0.3}

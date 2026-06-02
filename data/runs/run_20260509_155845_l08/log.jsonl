@@ -1,0 +1,7 @@
+{"event": "run_start", "ts": "2026-05-09T15:58:45.443Z", "run_id": "run_20260509_155845_l08", "level": 8, "started_at": "2026-05-09T15:58:45Z", "min_wait": 0.3, "max_wait": 3.0, "max_tap_retries": 2}
+{"event": "inventory_loaded", "ts": "2026-05-09T15:58:45.443Z", "n_tiles": 17, "estimated_total": 84}
+{"event": "bayesian_predict", "ts": "2026-05-09T15:58:48.871Z", "step": 0, "n_anchors_with_posterior": 16, "n_anchors_committed": 8, "top_predictions": [{"key": ["main_board", 0, 4], "tid": "tile_010"}, {"key": ["main_board", 0, 5], "tid": "tile_006"}, {"key": ["main_board", 1, 3], "tid": "tile_004"}, {"key": ["main_board", 2, 1], "tid": "tile_007"}, {"key": ["main_board", 2, 4], "tid": "tile_005"}]}
+{"event": "decision", "ts": "2026-05-09T15:58:49.089Z", "step": 0, "reason": "UNRECOVERABLE", "tap": null, "tray": 4, "score": -3.143, "lookahead_used": true, "lookahead_value": -1000.2, "decide_ms": 214, "num_alternatives": 0}
+{"event": "occult_predict", "ts": "2026-05-09T15:58:58.303Z", "step": 0, "predictions_count": 12, "occult_ms": 9125, "high_confidence": 0}
+{"event": "unrecoverable", "ts": "2026-05-09T15:58:58.304Z", "step": 0, "lookahead_value": -1000.2, "reason": "lookahead expected_value=-1000.2 <= surrender_threshold=-500.0; every continuation within depth-3 ends in loss"}
+{"event": "run_end", "ts": "2026-05-09T15:58:58.307Z", "run_id": "run_20260509_155845_l08", "status": "lost", "reason": "unrecoverable", "steps": 0, "level": 8, "duration_sec": 12.9, "level_win_rate": 0.06451612903225806}

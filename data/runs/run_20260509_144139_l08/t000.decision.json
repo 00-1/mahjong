@@ -1,0 +1,91 @@
+{
+  "should_stop": false,
+  "reason_code": "TRIPLET",
+  "tap": {
+    "x": 406,
+    "y": 621,
+    "location": "(0,2)"
+  },
+  "tile_id": "tile_009",
+  "label": "blue_butterfly",
+  "confidence": 0.95,
+  "score": 8.0,
+  "lookahead_used": false,
+  "lookahead_expected_value": null,
+  "reason": "3x blue_butterfly: tap (0,2) + (4,5) + queue:left_lower",
+  "alternatives": [
+    {
+      "x": 942,
+      "y": 1052,
+      "location": "(4,5)",
+      "tile_id": "tile_009",
+      "label": "blue_butterfly",
+      "score": 8.0,
+      "reason": "3x blue_butterfly: tap (0,2) + (4,5) + queue:left_lower"
+    },
+    {
+      "x": 318,
+      "y": 1341,
+      "location": "queue:left_lower",
+      "tile_id": "tile_009",
+      "label": "blue_butterfly",
+      "score": 8.0,
+      "reason": "3x blue_butterfly: tap (0,2) + (4,5) + queue:left_lower"
+    },
+    {
+      "x": 942,
+      "y": 621,
+      "location": "(0,5)",
+      "tile_id": "tile_013",
+      "label": "dandelion",
+      "score": 8.0,
+      "reason": "3x dandelion: tap (0,5) + (2,4) + (4,0)"
+    }
+  ],
+  "triplet_sequence": [
+    {
+      "x": 406,
+      "y": 621,
+      "location": "(0,2)"
+    },
+    {
+      "x": 942,
+      "y": 1052,
+      "location": "(4,5)"
+    },
+    {
+      "x": 318,
+      "y": 1341,
+      "location": "queue:left_lower"
+    }
+  ],
+  "state": {
+    "level": 8,
+    "image_size": [
+      1080,
+      2400
+    ],
+    "tray_filled": 0,
+    "tray": [],
+    "main_board_count": 18,
+    "queue_count": 3,
+    "tile_counts": {
+      "paper_crane": 2,
+      "bee": 2,
+      "blue_butterfly": 3,
+      "sunflower": 2,
+      "plumeria": 1,
+      "dandelion": 4,
+      "swallow": 2,
+      "lantern": 1,
+      "butterfly_orb": 2,
+      "kite": 1,
+      "pink_daisy": 1
+    },
+    "looks_like_puzzle": true
+  },
+  "image_size": {
+    "w": 1080,
+    "h": 2400
+  }
+}
