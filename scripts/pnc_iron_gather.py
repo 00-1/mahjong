@@ -168,6 +168,13 @@ def send_one_march(tmp: Path, dry_run: bool) -> bool:
     if dry_run:
         emit("would_send_march")
         return True
+    # Guard: (540,2280) is BAG when the search panel is closed.
+    # Re-verify the panel is still open right before tapping SEARCH.
+    bgr = snap(tmp)
+    if bgr is not None and read_search_panel_lv(bgr) is None:
+        emit("search_panel_closed_before_search_tap", action="reopening")
+        tap(*TAP_SEARCH_MAGNIFIER)
+        time.sleep(2)
     tap(*TAP_SEARCH_BUTTON)
     time.sleep(3)
     tap(*TAP_GATHER_MARKER)
