@@ -235,6 +235,10 @@ def main() -> int:
     args.shot_dir.mkdir(parents=True, exist_ok=True)
     tmp = args.shot_dir / "iron_check.png"
 
+    # Enforce rotation lock — monkey or popups can accidentally toggle it.
+    if not args.dry_run:
+        adb("settings", "put", "system", "accelerometer_rotation", "0")
+
     # Step 1: ensure world view.
     if not ensure_world_view(tmp, args.dry_run):
         emit("abandon", reason="not_on_world_view")
